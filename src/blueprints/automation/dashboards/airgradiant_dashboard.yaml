@@ -1,0 +1,745 @@
+title: 🌬️ Air Quality
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:air-filter
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🍳 Kitchen
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.kitchen_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.kitchen_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+          - type: gauge
+            entity: sensor.kitchen_airgradient_carbon_dioxide
+            name: CO₂
+            unit: ppm
+            needle: true
+            min: 0
+            max: 3500
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 801
+                color: '#c6b044'
+              - from: 1001
+                color: '#d48e3a'
+              - from: 1501
+                color: '#c25050'
+              - from: 2001
+                color: '#8a5aab'
+              - from: 3001
+                color: '#8d6e63'
+          - type: gauge
+            entity: sensor.kitchen_airgradient_pm2_5
+            name: PM2.5
+            unit: µg/m³
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 12
+                color: '#c6b044'
+              - from: 35
+                color: '#c25050'
+            min: 0
+            max: 150
+          - type: gauge
+            entity: sensor.kitchen_airgradient_voc_index
+            name: VOC Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 150
+                color: '#c6b044'
+              - from: 250
+                color: '#c25050'
+            min: 0
+            max: 500
+          - type: gauge
+            entity: sensor.kitchen_airgradient_nox_index
+            name: NOx Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 20
+                color: '#c6b044'
+              - from: 150
+                color: '#c25050'
+            min: 0
+            max: 500
+      - type: grid
+        cards:
+          - type: heading
+            heading: 💼 Office
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.office_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.office_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+          - type: gauge
+            entity: sensor.office_airgradient_carbon_dioxide
+            name: CO₂
+            unit: ppm
+            needle: true
+            min: 0
+            max: 3500
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 801
+                color: '#c6b044'
+              - from: 1001
+                color: '#d48e3a'
+              - from: 1501
+                color: '#c25050'
+              - from: 2001
+                color: '#8a5aab'
+              - from: 3001
+                color: '#8d6e63'
+          - type: gauge
+            entity: sensor.office_airgradient_pm2_5
+            name: PM2.5
+            unit: µg/m³
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 12
+                color: '#c6b044'
+              - from: 35
+                color: '#c25050'
+            min: 0
+            max: 150
+          - type: gauge
+            entity: sensor.office_airgradient_voc_index
+            name: VOC Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 150
+                color: '#c6b044'
+              - from: 250
+                color: '#c25050'
+            min: 0
+            max: 500
+          - type: gauge
+            entity: sensor.office_airgradient_nox_index
+            name: NOx Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 20
+                color: '#c6b044'
+              - from: 150
+                color: '#c25050'
+            min: 0
+            max: 500
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🧒 Ezra's Room
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ezra_s_room_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.ezra_s_room_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+          - type: gauge
+            entity: sensor.ezra_s_room_airgradient_carbon_dioxide
+            name: CO₂
+            unit: ppm
+            needle: true
+            min: 0
+            max: 3500
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 801
+                color: '#c6b044'
+              - from: 1001
+                color: '#d48e3a'
+              - from: 1501
+                color: '#c25050'
+              - from: 2001
+                color: '#8a5aab'
+              - from: 3001
+                color: '#8d6e63'
+          - type: gauge
+            entity: sensor.ezra_s_room_airgradient_pm2_5
+            name: PM2.5
+            unit: µg/m³
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 12
+                color: '#c6b044'
+              - from: 35
+                color: '#c25050'
+            min: 0
+            max: 150
+          - type: gauge
+            entity: sensor.ezra_s_room_airgradient_voc_index
+            name: VOC Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 150
+                color: '#c6b044'
+              - from: 250
+                color: '#c25050'
+            min: 0
+            max: 500
+          - type: gauge
+            entity: sensor.ezra_s_room_airgradient_nox_index
+            name: NOx Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 20
+                color: '#c6b044'
+              - from: 150
+                color: '#c25050'
+            min: 0
+            max: 500
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🧒 Grant's Room
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.grant_s_room_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.grant_s_room_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+          - type: gauge
+            entity: sensor.grant_s_room_airgradient_carbon_dioxide
+            name: CO₂
+            unit: ppm
+            needle: true
+            min: 0
+            max: 3500
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 801
+                color: '#c6b044'
+              - from: 1001
+                color: '#d48e3a'
+              - from: 1501
+                color: '#c25050'
+              - from: 2001
+                color: '#8a5aab'
+              - from: 3001
+                color: '#8d6e63'
+          - type: gauge
+            entity: sensor.grant_s_room_airgradient_pm2_5
+            name: PM2.5
+            unit: µg/m³
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 12
+                color: '#c6b044'
+              - from: 35
+                color: '#c25050'
+            min: 0
+            max: 150
+          - type: gauge
+            entity: sensor.grant_s_room_airgradient_voc_index
+            name: VOC Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 150
+                color: '#c6b044'
+              - from: 250
+                color: '#c25050'
+            min: 0
+            max: 500
+          - type: gauge
+            entity: sensor.grant_s_room_airgradient_nox_index
+            name: NOx Index
+            needle: true
+            segments:
+              - from: 0
+                color: '#68a354'
+              - from: 20
+                color: '#c6b044'
+              - from: 150
+                color: '#c25050'
+            min: 0
+            max: 500
+    header:
+      layout: responsive
+      badges_position: bottom
+      badges_wrap: wrap
+  - title: Trends
+    path: trends
+    icon: mdi:chart-line
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: 📈 Graphs (48 h)
+            heading_style: title
+          - type: history-graph
+            title: Humidity – All Rooms
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_humidity
+                name: Kitchen
+              - entity: sensor.office_airgradient_humidity
+                name: Office
+              - entity: sensor.ezra_s_room_airgradient_humidity
+                name: Ezra's Room
+              - entity: sensor.grant_s_room_airgradient_humidity
+                name: Grant's Room
+          - type: history-graph
+            title: Temperature – All Rooms
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_temperature
+                name: Kitchen
+              - entity: sensor.office_airgradient_temperature
+                name: Office
+              - entity: sensor.ezra_s_room_airgradient_temperature
+                name: Ezra's Room
+              - entity: sensor.grant_s_room_airgradient_temperature
+                name: Grant's Room
+          - type: history-graph
+            title: CO₂ – All Rooms
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_carbon_dioxide
+                name: Kitchen
+              - entity: sensor.office_airgradient_carbon_dioxide
+                name: Office
+              - entity: sensor.ezra_s_room_airgradient_carbon_dioxide
+                name: Ezra's Room
+              - entity: sensor.grant_s_room_airgradient_carbon_dioxide
+                name: Grant's Room
+          - type: history-graph
+            title: VOC Index – All Rooms
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_voc_index
+                name: Kitchen
+              - entity: sensor.office_airgradient_voc_index
+                name: Office
+              - entity: sensor.ezra_s_room_airgradient_voc_index
+                name: Ezra's Room
+              - entity: sensor.grant_s_room_airgradient_voc_index
+                name: Grant's Room
+          - type: history-graph
+            title: NOx Index – All Rooms
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_nox_index
+                name: Kitchen
+              - entity: sensor.office_airgradient_nox_index
+                name: Office
+              - entity: sensor.ezra_s_room_airgradient_nox_index
+                name: Ezra's Room
+              - entity: sensor.grant_s_room_airgradient_nox_index
+                name: Grant's Room
+          - type: history-graph
+            title: All Rooms - PM0.3
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_pm0_3
+                name: Kitchen PM0.3
+              - entity: sensor.office_airgradient_pm0_3
+                name: Office PM0.3
+              - entity: sensor.ezra_s_room_airgradient_pm0_3
+                name: Ezra PM0.3
+              - entity: sensor.grant_s_room_airgradient_pm0_3
+                name: Grant PM0.3
+            logarithmic_scale: false
+          - type: history-graph
+            title: All Rooms - PM1
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_pm1
+                name: Kitchen PM1
+              - entity: sensor.office_airgradient_pm1
+                name: Office PM1
+              - entity: sensor.ezra_s_room_airgradient_pm1
+                name: Ezra PM1
+              - entity: sensor.grant_s_room_airgradient_pm1
+                name: Grant PM1
+          - type: history-graph
+            title: All Rooms - PM2.5
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_pm2_5
+                name: Kitchen PM2.5
+              - entity: sensor.office_airgradient_pm2_5
+                name: Office PM2.5
+              - entity: sensor.ezra_s_room_airgradient_pm2_5
+                name: Ezra PM2.5
+              - entity: sensor.grant_s_room_airgradient_pm2_5
+                name: Grant PM2.5
+          - type: history-graph
+            title: All Rooms – PM10
+            hours_to_show: 48
+            entities:
+              - entity: sensor.kitchen_airgradient_pm10
+                name: Kitchen PM10
+              - entity: sensor.office_airgradient_pm10
+                name: Office PM10
+              - entity: sensor.ezra_s_room_airgradient_pm10
+                name: Ezra PM10
+              - entity: sensor.grant_s_room_airgradient_pm10
+                name: Grant PM10
+        column_span: 4
+    header:
+      layout: responsive
+      badges_position: bottom
+      badges_wrap: wrap
+  - title: Room Details
+    path: rooms
+    icon: mdi:floor-plan
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🍳 Kitchen
+          - type: entities
+            title: Kitchen Sensors
+            show_header_toggle: false
+            entities:
+              - entity: sensor.kitchen_airgradient_carbon_dioxide
+                name: CO₂
+                icon: mdi:molecule-co2
+              - entity: sensor.kitchen_airgradient_pm2_5
+                name: PM2.5
+                icon: mdi:blur
+              - entity: sensor.kitchen_airgradient_pm10
+                name: PM10
+                icon: mdi:blur-linear
+              - entity: sensor.kitchen_airgradient_pm1
+                name: PM1
+                icon: mdi:blur-radial
+              - entity: sensor.kitchen_airgradient_pm0_3
+                name: PM0.3
+                icon: mdi:circle-small
+              - entity: sensor.kitchen_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.kitchen_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+              - entity: sensor.kitchen_airgradient_voc_index
+                name: VOC Index
+                icon: mdi:chemical-weapon
+              - entity: sensor.kitchen_airgradient_nox_index
+                name: NOx Index
+                icon: mdi:smog
+              - entity: sensor.kitchen_airgradient_raw_nox
+                name: Raw NOx
+                icon: mdi:smog
+              - entity: sensor.kitchen_airgradient_rx
+                name: Data RX
+                icon: mdi:download-network
+              - entity: sensor.kitchen_airgradient_tx
+                name: Data TX
+                icon: mdi:upload-network
+          - type: entities
+            title: Kitchen Controls
+            show_header_toggle: false
+            entities:
+              - entity: number.kitchen_airgradient_display_brightness
+                name: Display Brightness
+                icon: mdi:brightness-6
+              - entity: number.kitchen_airgradient_led_bar_brightness
+                name: LED Bar Brightness
+                icon: mdi:led-strip-variant
+              - entity: select.kitchen_airgradient_led_bar_mode
+                name: LED Bar Mode
+                icon: mdi:led-strip
+              - entity: select.kitchen_airgradient_configuration_source
+                name: Configuration Source
+                icon: mdi:cog
+              - entity: select.kitchen_airgradient_co2_automatic_baseline_duration
+                name: CO₂ Auto Baseline Duration
+                icon: mdi:timer-sand
+              - entity: select.kitchen_airgradient_voc_index_learning_offset
+                name: VOC Learning Offset
+                icon: mdi:school
+              - entity: select.kitchen_airgradient_nox_index_learning_offset
+                name: NOx Learning Offset
+                icon: mdi:school
+              - entity: button.kitchen_airgradient_calibrate_co2_sensor
+                name: Calibrate CO₂ Sensor
+                icon: mdi:tune
+              - entity: button.kitchen_airgradient_test_led_bar
+                name: Test LED Bar
+                icon: mdi:led-strip
+              - entity: switch.kitchen_airgradient_post_data_to_airgradient
+                name: Post to AirGradient Cloud
+                icon: mdi:cloud-upload
+      - type: grid
+        cards:
+          - type: heading
+            heading: 💼 Office
+          - type: entities
+            title: Office Sensors
+            show_header_toggle: false
+            entities:
+              - entity: sensor.office_airgradient_carbon_dioxide
+                name: CO₂
+                icon: mdi:molecule-co2
+              - entity: sensor.office_airgradient_pm2_5
+                name: PM2.5
+                icon: mdi:blur
+              - entity: sensor.office_airgradient_pm10
+                name: PM10
+                icon: mdi:blur-linear
+              - entity: sensor.office_airgradient_pm1
+                name: PM1
+                icon: mdi:blur-radial
+              - entity: sensor.office_airgradient_pm0_3
+                name: PM0.3
+                icon: mdi:circle-small
+              - entity: sensor.office_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.office_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+              - entity: sensor.office_airgradient_voc_index
+                name: VOC Index
+                icon: mdi:chemical-weapon
+              - entity: sensor.office_airgradient_nox_index
+                name: NOx Index
+                icon: mdi:smog
+              - entity: sensor.office_airgradient_raw_nox
+                name: Raw NOx
+                icon: mdi:smog
+              - entity: sensor.office_airgradient_rx
+                name: Data RX
+                icon: mdi:download-network
+              - entity: sensor.office_airgradient_tx
+                name: Data TX
+                icon: mdi:upload-network
+          - type: entities
+            title: Office Controls
+            show_header_toggle: false
+            entities:
+              - entity: number.office_airgradient_display_brightness
+                name: Display Brightness
+                icon: mdi:brightness-6
+              - entity: number.office_airgradient_led_bar_brightness
+                name: LED Bar Brightness
+                icon: mdi:led-strip-variant
+              - entity: select.office_airgradient_led_bar_mode
+                name: LED Bar Mode
+                icon: mdi:led-strip
+              - entity: select.office_airgradient_configuration_source
+                name: Configuration Source
+                icon: mdi:cog
+              - entity: select.office_airgradient_co2_automatic_baseline_duration
+                name: CO₂ Auto Baseline Duration
+                icon: mdi:timer-sand
+              - entity: select.office_airgradient_voc_index_learning_offset
+                name: VOC Learning Offset
+                icon: mdi:school
+              - entity: select.office_airgradient_nox_index_learning_offset
+                name: NOx Learning Offset
+                icon: mdi:school
+              - entity: button.office_airgradient_calibrate_co2_sensor
+                name: Calibrate CO₂ Sensor
+                icon: mdi:tune
+              - entity: button.office_airgradient_test_led_bar
+                name: Test LED Bar
+                icon: mdi:led-strip
+              - entity: switch.office_airgradient_post_data_to_airgradient
+                name: Post to AirGradient Cloud
+                icon: mdi:cloud-upload
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🧒 Ezra's Room
+          - type: entities
+            title: Ezra's Room Sensors
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ezra_s_room_airgradient_carbon_dioxide
+                name: CO₂
+                icon: mdi:molecule-co2
+              - entity: sensor.ezra_s_room_airgradient_pm2_5
+                name: PM2.5
+                icon: mdi:blur
+              - entity: sensor.ezra_s_room_airgradient_pm10
+                name: PM10
+                icon: mdi:blur-linear
+              - entity: sensor.ezra_s_room_airgradient_pm1
+                name: PM1
+                icon: mdi:blur-radial
+              - entity: sensor.ezra_s_room_airgradient_pm0_3
+                name: PM0.3
+                icon: mdi:circle-small
+              - entity: sensor.ezra_s_room_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.ezra_s_room_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+              - entity: sensor.ezra_s_room_airgradient_voc_index
+                name: VOC Index
+                icon: mdi:chemical-weapon
+              - entity: sensor.ezra_s_room_airgradient_nox_index
+                name: NOx Index
+                icon: mdi:smog
+              - entity: sensor.ezra_s_room_airgradient_raw_nox
+                name: Raw NOx
+                icon: mdi:smog
+              - entity: sensor.ezra_s_room_airgradient_rx
+                name: Data RX
+                icon: mdi:download-network
+              - entity: sensor.ezra_s_room_airgradient_tx
+                name: Data TX
+                icon: mdi:upload-network
+          - type: entities
+            title: Ezra's Room Controls
+            show_header_toggle: false
+            entities:
+              - entity: number.ezra_s_room_airgradient_display_brightness
+                name: Display Brightness
+                icon: mdi:brightness-6
+              - entity: number.ezra_s_room_airgradient_led_bar_brightness
+                name: LED Bar Brightness
+                icon: mdi:led-strip-variant
+              - entity: select.ezra_s_room_airgradient_led_bar_mode
+                name: LED Bar Mode
+                icon: mdi:led-strip
+              - entity: select.ezra_s_room_airgradient_configuration_source
+                name: Configuration Source
+                icon: mdi:cog
+              - entity: select.ezra_s_room_airgradient_co2_automatic_baseline_duration
+                name: CO₂ Auto Baseline Duration
+                icon: mdi:timer-sand
+              - entity: select.ezra_s_room_airgradient_voc_index_learning_offset
+                name: VOC Learning Offset
+                icon: mdi:school
+              - entity: select.ezra_s_room_airgradient_nox_index_learning_offset
+                name: NOx Learning Offset
+                icon: mdi:school
+              - entity: button.ezra_s_room_airgradient_calibrate_co2_sensor
+                name: Calibrate CO₂ Sensor
+                icon: mdi:tune
+              - entity: button.ezra_s_room_airgradient_test_led_bar
+                name: Test LED Bar
+                icon: mdi:led-strip
+              - entity: switch.ezra_s_room_airgradient_post_data_to_airgradient
+                name: Post to AirGradient Cloud
+                icon: mdi:cloud-upload
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🧒 Grant's Room
+          - type: entities
+            title: Grant's Room Sensors
+            show_header_toggle: false
+            entities:
+              - entity: sensor.grant_s_room_airgradient_carbon_dioxide
+                name: CO₂
+                icon: mdi:molecule-co2
+              - entity: sensor.grant_s_room_airgradient_pm2_5
+                name: PM2.5
+                icon: mdi:blur
+              - entity: sensor.grant_s_room_airgradient_pm10
+                name: PM10
+                icon: mdi:blur-linear
+              - entity: sensor.grant_s_room_airgradient_pm1
+                name: PM1
+                icon: mdi:blur-radial
+              - entity: sensor.grant_s_room_airgradient_pm0_3
+                name: PM0.3
+                icon: mdi:circle-small
+              - entity: sensor.grant_s_room_airgradient_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.grant_s_room_airgradient_humidity
+                name: Humidity
+                icon: mdi:water-percent
+              - entity: sensor.grant_s_room_airgradient_voc_index
+                name: VOC Index
+                icon: mdi:chemical-weapon
+              - entity: sensor.grant_s_room_airgradient_nox_index
+                name: NOx Index
+                icon: mdi:smog
+              - entity: sensor.grant_s_room_airgradient_raw_nox
+                name: Raw NOx
+                icon: mdi:smog
+              - entity: sensor.grant_s_room_airgradient_rx
+                name: Data RX
+                icon: mdi:download-network
+              - entity: sensor.grant_s_room_airgradient_tx
+                name: Data TX
+                icon: mdi:upload-network
+          - type: entities
+            title: Grant's Room Controls
+            show_header_toggle: false
+            entities:
+              - entity: number.grant_s_room_airgradient_display_brightness
+                name: Display Brightness
+                icon: mdi:brightness-6
+              - entity: number.grant_s_room_airgradient_led_bar_brightness
+                name: LED Bar Brightness
+                icon: mdi:led-strip-variant
+              - entity: select.grant_s_room_airgradient_led_bar_mode
+                name: LED Bar Mode
+                icon: mdi:led-strip
+              - entity: select.grant_s_room_airgradient_configuration_source
+                name: Configuration Source
+                icon: mdi:cog
+              - entity: >-
+                  select.grant_s_room_airgradient_co2_automatic_baseline_duration
+                name: CO₂ Auto Baseline Duration
+                icon: mdi:timer-sand
+              - entity: select.grant_s_room_airgradient_voc_index_learning_offset
+                name: VOC Learning Offset
+                icon: mdi:school
+              - entity: select.grant_s_room_airgradient_nox_index_learning_offset
+                name: NOx Learning Offset
+                icon: mdi:school
+              - entity: button.grant_s_room_airgradient_calibrate_co2_sensor
+                name: Calibrate CO₂ Sensor
+                icon: mdi:tune
+              - entity: button.grant_s_room_airgradient_test_led_bar
+                name: Test LED Bar
+                icon: mdi:led-strip
+              - entity: switch.grant_s_room_airgradient_post_data_to_airgradient
+                name: Post to AirGradient Cloud
+                icon: mdi:cloud-upload
