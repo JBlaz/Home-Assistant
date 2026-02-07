@@ -1,0 +1,124 @@
+blueprint:
+  name: CO₂ Alert – Advanced (Multi-Sensor)
+  description: >
+    Advanced CO₂ alert with per-sensor thresholds, notifications,
+    optional scripts, and recovery suppression.
+    Configure sensors once with their thresholds.
+  domain: automation
+
+  input:
+    co2_sensors:
+      name: CO₂ Sensors
+      description: Select one or more CO₂ sensors to monitor
+      selector:
+        entity:
+          multiple: true
+          domain: sensor
+          device_class: carbon_dioxide
+
+    threshold:
+      name: Alert Threshold (ppm)
+      description: CO₂ level at which to trigger alert for all sensors
+      default: 1000
+      selector:
+        number:
+          min: 400
+          max: 2000
+          step: 50
+          unit_of_measurement: ppm
+
+    notify_device:
+      name: "Devices to Notify"
+      description: "Select mobile devices to receive notifications"
+      default: []
+      selector:
+        device:
+          integration: mobile_app
+          multiple: true
+
+    optional_script:
+      name: Optional Script to Run
+      description: Script to execute when alert is triggered (optional)
+      default: ""
+      selector:
+        entity:
+          domain: script
+
+    duration:
+      name: Time Above Threshold
+      description: How long the sensor must stay above threshold before alerting
+      default:
+        minutes: 2
+      selector:
+        duration: {}
+
+    recovery_ppm:
+      name: Recovery Threshold (reset alerts)
+      description: CO₂ level below which alert is considered resolved
+      default: 800
+      selector:
+        number:
+          min: 400
+          max: 2000
+          step: 50
+          unit_of_measurement: ppm
+
+    recovery_enabled:
+      name: Enable Recovery Wait
+      description: Wait for CO₂ to drop below recovery threshold before allowing another alert
+      default: true
+      selector:
+        boolean: {}
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input co2_sensors
+    above: !input threshold
+    for: !input duration
+
+variables:
+  triggered_sensor: "{{ trigger.entity_id }}"
+  current_co2: "{{ trigger.to_state.state | int(0) }}"
+  sensor_name: "{{ trigger.to_state.name }}"
+  device_name: >
+    {%- set dev_id = trigger.to_state.device_id -%}
+    {%- if dev_id -%}
+      {{ device_attr(dev_id, 'name') or 'Unknown Device' }}
+    {%- else -%}
+      Unknown Device
+    {%- endif -%}
+  room_name: "{{ area_name(trigger.to_state.entity_id) or 'Unknown Room' }}"
+  threshold_ppm: !input threshold
+
+condition: []
+
+action:
+  - repeat:
+      for_each: !input notify_device
+      sequence:
+        - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | replace(' ', '_') | replace('-', '_') | lower }}
+          data:
+            title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
+            message: >
+              {{ sensor_name }}
+              {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
+              has reached {{ current_co2 }} ppm CO₂
+              {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
+              (threshold: {{ threshold_ppm }} ppm).
+            data:
+              tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+
+  - if: "{{ optional_script != '' }}"
+    then:
+      - service: script.turn_on
+        data:
+          entity_id: "{{ optional_script }}"
+
+  # Wait until CO₂ recovers below threshold before allowing another alert
+  - if: "{{ recovery_enabled }}"
+    then:
+      - wait_template: "{{ states(triggered_sensor) | int(0) < (recovery_ppm | int(800)) }}"
+
+mode: parallel
+max: 10
+
