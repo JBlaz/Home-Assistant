@@ -1,17 +1,18 @@
 blueprint:
-  name: Outdoor Lights – Independent Random Activity
+  name: Outdoor Lights – Independent Random Activity (Label Support)
   description: >
     Turns lights on at sunset, randomly toggles individual lights
     during a night window, locks them on, and turns them off at sunrise.
+    Supports labels, areas, and entities.
   domain: automation
 
   input:
     lights:
-      name: Outdoor Lights
+      name: Outdoor Lights (Labels / Areas / Entities)
       selector:
-        entity:
-          multiple: true
-          domain: light
+        target:
+          entity:
+            domain: light
 
     random_start:
       name: Random Activity Start Time
@@ -81,7 +82,9 @@ trigger:
     id: sunrise
 
 variables:
-  lights_list: !input lights
+  # Expand labels/areas/entities into a flat entity list
+  lights_list: >
+    {{ expand(lights.entity_id) | map(attribute='entity_id') | list }}
   event_count: >
     {{ range(min_events | int, max_events | int + 1) | random }}
 
@@ -94,8 +97,7 @@ action:
             id: sunset
         sequence:
           - service: light.turn_on
-            target:
-              entity_id: "{{ lights_list }}"
+            target: !input lights
 
       # 🌙 Independent random activity
       - conditions:
@@ -111,8 +113,7 @@ action:
                 - condition: sun
                   before: sunrise
                 - variables:
-                    chosen_light: >
-                      {{ lights_list | random }}
+                    chosen_light: "{{ lights_list | random }}"
                 - service: light.toggle
                   target:
                     entity_id: "{{ chosen_light }}"
@@ -123,8 +124,7 @@ action:
             id: random_end
         sequence:
           - service: light.turn_on
-            target:
-              entity_id: "{{ lights_list }}"
+            target: !input lights
 
       # 🌅 Sunrise → All OFF
       - conditions:
@@ -132,7 +132,6 @@ action:
             id: sunrise
         sequence:
           - service: light.turn_off
-            target:
-              entity_id: "{{ lights_list }}"
+            target: !input lights
 
 mode: restart
