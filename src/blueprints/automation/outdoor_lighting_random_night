@@ -1,0 +1,96 @@
+blueprint:
+  name: Outdoor Lights – Sunset, Sunrise, Random Night Off
+  description: >
+    Turns outdoor lights on at sunset, off at sunrise,
+    and optionally turns them off once at a random time overnight.
+  domain: automation
+
+  input:
+    lights:
+      name: Outdoor Lights
+      description: One or more outdoor lights
+      selector:
+        target:
+          entity:
+            domain: light
+
+    enable_random_off:
+      name: Enable Random Night Off
+      default: true
+      selector:
+        boolean: {}
+
+    random_start:
+      name: Random Off Window Start
+      description: Earliest time the lights may turn off
+      default: "00:00:00"
+      selector:
+        time: {}
+
+    random_end:
+      name: Random Off Window End
+      description: Latest time the lights may turn off
+      default: "04:00:00"
+      selector:
+        time: {}
+
+    random_delay_max:
+      name: Max Random Delay (minutes)
+      description: Extra randomness added after window start
+      default: 120
+      selector:
+        number:
+          min: 1
+          max: 360
+          step: 5
+          unit_of_measurement: minutes
+
+trigger:
+  - platform: sun
+    event: sunset
+
+  - platform: sun
+    event: sunrise
+
+  - platform: time
+    at: !input random_start
+
+variables:
+  is_night: "{{ is_state('sun.sun', 'below_horizon') }}"
+  random_minutes: "{{ range(1, random_delay_max | int) | random }}"
+
+action:
+  - choose:
+      # 🌇 Sunset → Turn lights ON
+      - conditions:
+          - condition: trigger
+            id: sunset
+        sequence:
+          - service: light.turn_on
+            target: !input lights
+
+      # 🌅 Sunrise → Turn lights OFF
+      - conditions:
+          - condition: trigger
+            id: sunrise
+        sequence:
+          - service: light.turn_off
+            target: !input lights
+
+      # 🌙 Random Night OFF
+      - conditions:
+          - condition: trigger
+            id: time
+          - condition: template
+            value_template: "{{ is_night }}"
+          - condition: template
+            value_template: "{{ enable_random_off }}"
+        sequence:
+          - delay:
+              minutes: "{{ random_minutes }}"
+          - condition: sun
+            before: sunrise
+          - service: light.turn_off
+            target: !input lights
+
+mode: restart
