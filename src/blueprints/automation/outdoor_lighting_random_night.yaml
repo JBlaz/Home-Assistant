@@ -81,7 +81,6 @@ trigger:
     id: sunrise
 
 variables:
-  # Expand labels / areas / entities → keep ONLY lights
   lights_list: >
     {{
       expand(lights.entity_id | default([], true))
@@ -95,7 +94,6 @@ variables:
 action:
   - choose:
 
-      # 🌇 Sunset → All ON
       - conditions:
           - condition: trigger
             id: sunset
@@ -103,7 +101,6 @@ action:
           - service: light.turn_on
             target: !input lights
 
-      # 🌙 Independent random activity window
       - conditions:
           - condition: trigger
             id: random_start
@@ -122,7 +119,6 @@ action:
                   target:
                     entity_id: "{{ chosen_light }}"
 
-      # 🔒 End of window → force all ON
       - conditions:
           - condition: trigger
             id: random_end
@@ -130,7 +126,6 @@ action:
           - service: light.turn_on
             target: !input lights
 
-      # 🌅 Sunrise → All OFF
       - conditions:
           - condition: trigger
             id: sunrise
