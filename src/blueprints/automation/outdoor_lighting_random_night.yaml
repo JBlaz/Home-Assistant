@@ -1,17 +1,17 @@
 blueprint:
-  name: Outdoor Lights – Random Night Activity
+  name: Outdoor Lights – Independent Random Activity
   description: >
-    Turns lights on at sunset, randomly toggles them between two times,
-    locks them on at the end of the window, and turns them off at sunrise.
+    Turns lights on at sunset, randomly toggles individual lights
+    during a night window, locks them on, and turns them off at sunrise.
   domain: automation
 
   input:
     lights:
       name: Outdoor Lights
       selector:
-        target:
-          entity:
-            domain: light
+        entity:
+          multiple: true
+          domain: light
 
     random_start:
       name: Random Activity Start Time
@@ -25,40 +25,40 @@ blueprint:
       selector:
         time: {}
 
-    min_toggles:
-      name: Minimum Toggles Per Night
-      default: 1
+    min_events:
+      name: Minimum Random Events Per Night
+      default: 2
       selector:
         number:
           min: 0
-          max: 10
+          max: 20
           step: 1
 
-    max_toggles:
-      name: Maximum Toggles Per Night
-      default: 4
+    max_events:
+      name: Maximum Random Events Per Night
+      default: 8
       selector:
         number:
           min: 1
-          max: 15
+          max: 30
           step: 1
 
     min_delay:
-      name: Minimum Delay Between Toggles (minutes)
-      default: 20
+      name: Minimum Delay Between Events (minutes)
+      default: 10
       selector:
         number:
-          min: 5
+          min: 1
           max: 180
           step: 5
           unit_of_measurement: minutes
 
     max_delay:
-      name: Maximum Delay Between Toggles (minutes)
-      default: 90
+      name: Maximum Delay Between Events (minutes)
+      default: 60
       selector:
         number:
-          min: 10
+          min: 5
           max: 240
           step: 5
           unit_of_measurement: minutes
@@ -81,51 +81,58 @@ trigger:
     id: sunrise
 
 variables:
-  toggle_count: >
-    {{ range(min_toggles | int, max_toggles | int + 1) | random }}
-  delay_minutes: >
-    {{ range(min_delay | int, max_delay | int + 1) | random }}
+  lights_list: !input lights
+  event_count: >
+    {{ range(min_events | int, max_events | int + 1) | random }}
 
 action:
   - choose:
 
-      # 🌇 Sunset → ON
+      # 🌇 Sunset → All ON
       - conditions:
           - condition: trigger
             id: sunset
         sequence:
           - service: light.turn_on
-            target: !input lights
+            target:
+              entity_id: "{{ lights_list }}"
 
-      # 🌙 Random activity window
+      # 🌙 Independent random activity
       - conditions:
           - condition: trigger
             id: random_start
         sequence:
           - repeat:
-              count: "{{ toggle_count }}"
+              count: "{{ event_count }}"
               sequence:
                 - delay:
-                    minutes: "{{ range(min_delay | int, max_delay | int + 1) | random }}"
+                    minutes: >
+                      {{ range(min_delay | int, max_delay | int + 1) | random }}
                 - condition: sun
                   before: sunrise
+                - variables:
+                    chosen_light: >
+                      {{ lights_list | random }}
                 - service: light.toggle
-                  target: !input lights
+                  target:
+                    entity_id: "{{ chosen_light }}"
 
-      # 🔒 Lock lights ON at end of window
+      # 🔒 Lock ON at end of window
       - conditions:
           - condition: trigger
             id: random_end
         sequence:
           - service: light.turn_on
-            target: !input lights
+            target:
+              entity_id: "{{ lights_list }}"
 
-      # 🌅 Sunrise → OFF
+      # 🌅 Sunrise → All OFF
       - conditions:
           - condition: trigger
             id: sunrise
         sequence:
           - service: light.turn_off
-            target: !input lights
+            target:
+              entity_id: "{{ lights_list }}"
 
 mode: restart
