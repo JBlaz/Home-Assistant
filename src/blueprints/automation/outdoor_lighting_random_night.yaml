@@ -1,32 +1,29 @@
 blueprint:
   name: Outdoor Lights – Independent Random Activity (Label Safe)
-  description: >
-    Turns lights on at sunset, randomly toggles individual lights
-    during a night window, locks them on at the end of the window,
-    and turns them off at sunrise. Supports labels, areas, and entities.
+  description: Randomly toggles individual outdoor lights overnight
   domain: automation
 
   input:
     lights:
-      name: Outdoor Lights (Labels / Areas / Entities)
-      description: Select a label group, area, or individual lights
+      name: Outdoor Lights
+      description: Select labels, areas, or lights
       selector:
         target: {}
 
     random_start:
-      name: Random Activity Start Time
+      name: Random Start Time
       default: "23:00:00"
       selector:
         time: {}
 
     random_end:
-      name: Random Activity End Time
+      name: Random End Time
       default: "04:30:00"
       selector:
         time: {}
 
     min_events:
-      name: Minimum Random Events Per Night
+      name: Minimum Events
       default: 2
       selector:
         number:
@@ -35,7 +32,7 @@ blueprint:
           step: 1
 
     max_events:
-      name: Maximum Random Events Per Night
+      name: Maximum Events
       default: 8
       selector:
         number:
@@ -44,24 +41,22 @@ blueprint:
           step: 1
 
     min_delay:
-      name: Minimum Delay Between Events (minutes)
+      name: Minimum Delay (minutes)
       default: 10
       selector:
         number:
           min: 1
           max: 180
           step: 5
-          unit_of_measurement: minutes
 
     max_delay:
-      name: Maximum Delay Between Events (minutes)
+      name: Maximum Delay (minutes)
       default: 60
       selector:
         number:
           min: 5
           max: 240
           step: 5
-          unit_of_measurement: minutes
 
 trigger:
   - platform: sun
@@ -81,19 +76,11 @@ trigger:
     id: sunrise
 
 variables:
-  lights_list: >
-    {{
-      expand(lights.entity_id | default([], true))
-      | selectattr('domain', 'eq', 'light')
-      | map(attribute='entity_id')
-      | list
-    }}
-  event_count: >
-    {{ range(min_events | int, max_events | int + 1) | random }}
+  lights_list: "{{ expand(lights.entity_id | default([], true)) | selectattr('domain','eq','light') | map(attribute='entity_id') | list }}"
+  event_count: "{{ range(min_events | int, max_events | int + 1) | random }}"
 
 action:
   - choose:
-
       - conditions:
           - condition: trigger
             id: sunset
@@ -109,15 +96,12 @@ action:
               count: "{{ event_count }}"
               sequence:
                 - delay:
-                    minutes: >
-                      {{ range(min_delay | int, max_delay | int + 1) | random }}
+                    minutes: "{{ range(min_delay | int, max_delay | int + 1) | random }}"
                 - condition: sun
                   before: sunrise
-                - variables:
-                    chosen_light: "{{ lights_list | random }}"
                 - service: light.toggle
                   target:
-                    entity_id: "{{ chosen_light }}"
+                    entity_id: "{{ lights_list | random }}"
 
       - conditions:
           - condition: trigger
