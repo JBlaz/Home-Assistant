@@ -6,13 +6,13 @@ blueprint:
     Supports labels, areas, and entities.
   domain: automation
 
-  input:
-    lights:
-      name: Outdoor Lights (Labels / Areas / Entities)
-      selector:
-        target:
-          entity:
-            domain: light
+    input:
+      lights:
+        name: Outdoor Lights (Labels / Areas / Entities)
+        description: Select a label, area, or individual lights
+        selector:
+          target: {}
+
 
     random_start:
       name: Random Activity Start Time
@@ -82,11 +82,19 @@ trigger:
     id: sunrise
 
 variables:
-  # Expand labels/areas/entities into a flat entity list
   lights_list: >
-    {{ expand(lights.entity_id) | map(attribute='entity_id') | list }}
+    {{
+      expand(
+        lights.entity_id
+        | default([], true)
+      )
+      | selectattr('domain', 'eq', 'light')
+      | map(attribute='entity_id')
+      | list
+    }}
   event_count: >
     {{ range(min_events | int, max_events | int + 1) | random }}
+
 
 action:
   - choose:
