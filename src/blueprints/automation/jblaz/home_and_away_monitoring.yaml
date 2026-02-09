@@ -1,3 +1,16 @@
+# Home/Away Thermostat Preset by Zone
+# This blueprint automatically adjusts your thermostat presets based on occupancy and time.
+# Requirements:
+#   - Home Assistant with climate entities supporting preset_mode
+#   - A zone.home entity tracking occupancy (0 = away, 1+ = someone home)
+#   - Thermostats that support at least 3 preset modes (home, sleep, away)
+#
+# How it works:
+#   - When zone.home < 1: Sets thermostats to Away mode
+#   - When zone.home >= 1 and during sleep hours: Sets to Sleep mode
+#   - When zone.home >= 1 and NOT during sleep hours: Sets to Home mode
+#   - Triggers on occupancy changes and at sleep schedule boundaries
+#
 blueprint:
   name: Home/Away Thermostat Preset by Zone
   description: >-
@@ -7,44 +20,61 @@ blueprint:
   input:
     thermostats:
       name: Thermostats
-      description: Climate entities to control.
+      description: >-
+        Climate entities to control. Select all thermostats that should change
+        presets together. Must support preset modes.
       selector:
         entity:
           domain: climate
           multiple: true
     home_preset:
       name: Home preset mode
-      description: Preset to use when someone is home and it is not sleep time.
+      description: >-
+        Preset to use when someone is home and it is NOT sleep time.
+        Common values: "home", "comfort", "eco". Check your thermostat for available modes.
       default: home
       selector:
         text:
     sleep_preset:
       name: Sleep preset mode
-      description: Preset to use when someone is home during sleep time.
+      description: >-
+        Preset to use when someone is home DURING sleep hours.
+        Common values: "sleep", "night", "comfort".
       default: sleep
       selector:
         text:
     away_preset:
       name: Away preset mode
-      description: Preset to use when no one is home.
+      description: >-
+        Preset to use when nobody is home (zone.home < 1).
+        Common values: "away", "eco", "vacation".
       default: away
       selector:
         text:
     sleep_start:
       name: Sleep start time
-      description: Time of day when sleep mode starts.
+      description: >-
+        Time of day when sleep mode begins (e.g., 22:00 for 10 PM).
+        Format: HH:MM:SS
       default: "22:00:00"
       selector:
         time:
     sleep_end:
       name: Sleep end time
-      description: Time of day when sleep mode ends.
+      description: >-
+        Time of day when sleep mode ends (e.g., 06:00 for 6 AM).
+        Format: HH:MM:SS. Can be earlier than sleep_start for overnight periods.
       default: "06:00:00"
       selector:
         time:
 
 mode: single
 
+# Triggers when:
+# 1. Someone arrives home (zone.home goes above 0)
+# 2. Everyone leaves (zone.home goes below 1)
+# 3. Sleep time starts (sleep_start time is reached)
+# 4. Sleep time ends (sleep_end time is reached)
 trigger:
   - platform: numeric_state
     entity_id: zone.home
@@ -57,12 +87,15 @@ trigger:
   - platform: time
     at: !input sleep_end
 
+# Store input values as variables for use in conditions
 variables:
   sleep_start: !input sleep_start
   sleep_end: !input sleep_end
 
+# Determine which preset to apply based on occupancy and time
 action:
   - choose:
+      # If nobody is home (zone.home < 1), set to away preset
       - conditions:
           - condition: numeric_state
             entity_id: zone.home
@@ -73,6 +106,7 @@ action:
               entity_id: !input thermostats
             data:
               preset_mode: !input away_preset
+      # If someone is home AND it's sleep time, set to sleep preset
       - conditions:
           - condition: numeric_state
             entity_id: zone.home
@@ -91,6 +125,7 @@ action:
               entity_id: !input thermostats
             data:
               preset_mode: !input sleep_preset
+    # Otherwise (someone is home and NOT sleep time), set to home preset
     default:
       - service: climate.set_preset_mode
         target:
