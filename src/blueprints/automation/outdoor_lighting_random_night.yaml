@@ -2,82 +2,93 @@ blueprint:
   name: Outdoor Lights – Independent Random Activity (Label Safe)
   description: Randomly toggles individual outdoor lights overnight
   domain: automation
-
   input:
     lights:
       name: Outdoor Lights
       description: Select labels, areas, or lights
       selector:
         target: {}
-
     random_start:
       name: Random Start Time
-      default: "23:00:00"
+      default: '23:00:00'
       selector:
         time: {}
-
     random_end:
       name: Random End Time
-      default: "04:30:00"
+      default: '04:30:00'
       selector:
         time: {}
-
     min_events:
       name: Minimum Events
       default: 2
       selector:
         number:
-          min: 0
-          max: 20
-          step: 1
-
+          min: 0.0
+          max: 20.0
+          step: 1.0
+          mode: slider
     max_events:
       name: Maximum Events
       default: 8
       selector:
         number:
-          min: 1
-          max: 30
-          step: 1
-
+          min: 1.0
+          max: 30.0
+          step: 1.0
+          mode: slider
     min_delay:
       name: Minimum Delay (minutes)
       default: 10
       selector:
         number:
-          min: 1
-          max: 180
-          step: 5
-
+          min: 1.0
+          max: 180.0
+          step: 5.0
+          mode: slider
     max_delay:
       name: Maximum Delay (minutes)
       default: 60
       selector:
         number:
-          min: 5
-          max: 240
-          step: 5
+          min: 5.0
+          max: 240.0
+          step: 5.0
+          mode: slider
+  source_url: https://github.com/JBlaz/Home-Assistant/blob/main/src/blueprints/automation/outdoor_lighting_random_night.yaml
 
 trigger:
   - platform: sun
     event: sunset
     id: sunset
-
   - platform: time
     at: !input random_start
     id: random_start
-
   - platform: time
     at: !input random_end
     id: random_end
-
   - platform: sun
     event: sunrise
     id: sunrise
 
+# 1) Bind inputs to variables that can be used in templates.
+# 2) Derive helper lists/values using those variables.
 variables:
-  lights_list: "{{ expand(lights.entity_id | default([], true)) | selectattr('domain','eq','light') | map(attribute='entity_id') | list }}"
-  event_count: "{{ range(min_events | int, max_events | int + 1) | random }}"
+  v_lights: !input lights
+  v_min_events: !input min_events
+  v_max_events: !input max_events
+  v_min_delay: !input min_delay
+  v_max_delay: !input max_delay
+
+  # Expand selected targets (labels/areas/entities) to a flat list of light entity_ids
+  lights_list: >-
+    {{ expand(v_lights.entity_id | default([], true)) 
+       | selectattr('domain','eq','light') 
+       | map(attribute='entity_id') 
+       | list }}
+
+  # Random count in [min,max]
+  event_count: >-
+    {{ range((v_min_events | int), (v_max_events | int) + 1) | random }}
 
 action:
   - choose:
@@ -93,15 +104,19 @@ action:
             id: random_start
         sequence:
           - repeat:
-              count: "{{ event_count }}"
+              count: '{{ event_count }}'
               sequence:
+                # Random delay between events
                 - delay:
-                    minutes: "{{ range(min_delay | int, max_delay | int + 1) | random }}"
+                    minutes: >-
+                      {{ range((v_min_delay | int), (v_max_delay | int) + 1) | random }}
+                # Stop any remaining steps if we've reached sunrise
                 - condition: sun
                   before: sunrise
+                # Toggle a random light from the selected set
                 - service: light.toggle
                   target:
-                    entity_id: "{{ lights_list | random }}"
+                    entity_id: '{{ (lights_list | default([], true)) | random }}'
 
       - conditions:
           - condition: trigger
