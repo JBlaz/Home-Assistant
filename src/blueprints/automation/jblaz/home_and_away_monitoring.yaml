@@ -1,0 +1,99 @@
+blueprint:
+	name: Home/Away Thermostat Preset by Zone
+	description: >-
+		Sets thermostat preset modes based on zone.home occupancy and time of day.
+		If someone is home, set to Home or Sleep. If no one is home, set to Away.
+	domain: automation
+	input:
+		thermostats:
+			name: Thermostats
+			description: Climate entities to control.
+			selector:
+				entity:
+					domain: climate
+					multiple: true
+		home_preset:
+			name: Home preset mode
+			description: Preset to use when someone is home and it is not sleep time.
+			default: home
+			selector:
+				text:
+		sleep_preset:
+			name: Sleep preset mode
+			description: Preset to use when someone is home during sleep time.
+			default: sleep
+			selector:
+				text:
+		away_preset:
+			name: Away preset mode
+			description: Preset to use when no one is home.
+			default: away
+			selector:
+				text:
+		sleep_start:
+			name: Sleep start time
+			description: Time of day when sleep mode starts.
+			default: "22:00:00"
+			selector:
+				time:
+		sleep_end:
+			name: Sleep end time
+			description: Time of day when sleep mode ends.
+			default: "06:00:00"
+			selector:
+				time:
+
+mode: single
+
+trigger:
+	- platform: numeric_state
+		entity_id: zone.home
+		below: 1
+	- platform: numeric_state
+		entity_id: zone.home
+		above: 0
+	- platform: time
+		at: !input sleep_start
+	- platform: time
+		at: !input sleep_end
+
+variables:
+	sleep_start: !input sleep_start
+	sleep_end: !input sleep_end
+
+action:
+	- choose:
+			- conditions:
+					- condition: numeric_state
+						entity_id: zone.home
+						below: 1
+				sequence:
+					- service: climate.set_preset_mode
+						target:
+							entity_id: !input thermostats
+						data:
+							preset_mode: !input away_preset
+			- conditions:
+					- condition: numeric_state
+						entity_id: zone.home
+						above: 0
+					- condition: template
+						value_template: >-
+							{% set now_time = now().time() %}
+							{% if sleep_start < sleep_end %}
+								{{ now_time >= sleep_start and now_time < sleep_end }}
+							{% else %}
+								{{ now_time >= sleep_start or now_time < sleep_end }}
+							{% endif %}
+				sequence:
+					- service: climate.set_preset_mode
+						target:
+							entity_id: !input thermostats
+						data:
+							preset_mode: !input sleep_preset
+		default:
+			- service: climate.set_preset_mode
+				target:
+					entity_id: !input thermostats
+				data:
+					preset_mode: !input home_preset
