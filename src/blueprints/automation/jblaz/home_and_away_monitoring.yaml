@@ -1,53 +1,58 @@
-# Home/Away Thermostat Preset by Zone
-# This blueprint automatically adjusts your thermostat presets based on occupancy and time.
+# Home/Away Thermostat Control by Zone
+# This blueprint automatically adjusts your thermostat mode based on occupancy and time.
 # Requirements:
-#   - Home Assistant with climate entities supporting preset_mode
+#   - Home Assistant with a select entity for thermostat mode control
 #   - A zone.home entity tracking occupancy (0 = away, 1+ = someone home)
-#   - Thermostats that support at least 3 preset modes (home, sleep, away)
+#   - Your script must have a select.select_option action with home/sleep/away options
+#
+# How to find your select entity:
+#   1. Go to Developer Tools > States
+#   2. Look for entities like "select.thermostat_mode" or similar
+#   3. Click on it and verify it has "home", "sleep", and "away" options
 #
 # How it works:
-#   - When zone.home < 1: Sets thermostats to Away mode
-#   - When zone.home >= 1 and during sleep hours: Sets to Sleep mode
-#   - When zone.home >= 1 and NOT during sleep hours: Sets to Home mode
-#   - Triggers on occupancy changes and at sleep schedule boundaries
+#   - When zone.home < 1: Sets select entity to Away option
+#   - When zone.home >= 1 and during sleep hours: Sets to Sleep option
+#   - When zone.home >= 1 and NOT during sleep hours: Sets to Home option
+#   - Triggers on occupancy changes and every 15 minutes to catch time-based transitions
 #
 blueprint:
-  name: Home/Away Thermostat Preset by Zone
+  name: Home/Away Thermostat Control by Zone
   description: >-
-    Sets thermostat preset modes based on zone.home occupancy and time of day.
-    If someone is home, set to Home or Sleep. If no one is home, set to Away.
+    Controls thermostat mode select entity based on zone.home occupancy and time of day.
+    If someone is home, set to Home or Sleep mode. If no one is home, set to Away.
   domain: automation
   input:
-    thermostats:
-      name: Thermostats
+    thermostat_select:
+      name: Thermostat Mode Select Entity
       description: >-
-        Climate entities to control. Select all thermostats that should change
-        presets together. Must support preset modes.
+        The select entity that controls your thermostat mode
+        (e.g., select.main_floor_mode). Must have home, sleep, and away options.
       selector:
         entity:
-          domain: climate
-          multiple: true
-    home_preset:
-      name: Home preset mode
+          domain: select
+          multiple: false
+    home_option:
+      name: Home mode option
       description: >-
-        Preset to use when someone is home and it is NOT sleep time.
-        Common values: "home", "comfort", "eco". Check your thermostat for available modes.
+        The option value to send when someone is home and it is NOT sleep time.
+        Typically: "home"
       default: home
       selector:
         text:
-    sleep_preset:
-      name: Sleep preset mode
+    sleep_option:
+      name: Sleep mode option
       description: >-
-        Preset to use when someone is home DURING sleep hours.
-        Common values: "sleep", "night", "comfort".
+        The option value to send when someone is home DURING sleep hours.
+        Typically: "sleep"
       default: sleep
       selector:
         text:
-    away_preset:
-      name: Away preset mode
+    away_option:
+      name: Away mode option
       description: >-
-        Preset to use when nobody is home (zone.home < 1).
-        Common values: "away", "eco", "vacation".
+        The option value to send when nobody is home (zone.home < 1).
+        Typically: "away"
       default: away
       selector:
         text:
@@ -73,8 +78,7 @@ mode: single
 # Triggers when:
 # 1. Someone arrives home (zone.home goes above 0)
 # 2. Everyone leaves (zone.home goes below 1)
-# 3. Sleep time starts (sleep_start time is reached)
-# 4. Sleep time ends (sleep_end time is reached)
+# Also triggers periodically to check if time-based mode needs to change
 trigger:
   - platform: numeric_state
     entity_id: zone.home
@@ -82,10 +86,8 @@ trigger:
   - platform: numeric_state
     entity_id: zone.home
     above: 0
-  - platform: time
-    at: !input sleep_start
-  - platform: time
-    at: !input sleep_end
+  - platform: time_pattern
+    minutes: "/15"
 
 # Store input values as variables for use in conditions
 variables:
@@ -101,11 +103,11 @@ action:
             entity_id: zone.home
             below: 1
         sequence:
-          - service: climate.set_preset_mode
+          - service: select.select_option
             target:
-              entity_id: !input thermostats
+              entity_id: !input thermostat_select
             data:
-              preset_mode: !input away_preset
+              option: !input away_option
       # If someone is home AND it's sleep time, set to sleep preset
       - conditions:
           - condition: numeric_state
@@ -120,15 +122,15 @@ action:
                 {{ now_time >= sleep_start or now_time < sleep_end }}
               {% endif %}
         sequence:
-          - service: climate.set_preset_mode
+          - service: select.select_option
             target:
-              entity_id: !input thermostats
+              entity_id: !input thermostat_select
             data:
-              preset_mode: !input sleep_preset
+              option: !input sleep_option
     # Otherwise (someone is home and NOT sleep time), set to home preset
     default:
-      - service: climate.set_preset_mode
+      - service: select.select_option
         target:
-          entity_id: !input thermostats
+          entity_id: !input thermostat_select
         data:
-          preset_mode: !input home_preset
+          option: !input home_option
