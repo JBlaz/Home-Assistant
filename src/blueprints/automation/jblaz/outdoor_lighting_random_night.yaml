@@ -59,12 +59,15 @@ trigger:
   - platform: sun
     event: sunset
     id: sunset
+    alias: Sunset
   - platform: time_pattern
     minutes: "/1"
     id: tick
+    alias: Minute Tick
   - platform: sun
     event: sunrise
     id: sunrise
+    alias: Sunrise
 
 # 1) Bind inputs to variables that can be used in templates.
 # 2) Derive helper lists/values using those variables.
