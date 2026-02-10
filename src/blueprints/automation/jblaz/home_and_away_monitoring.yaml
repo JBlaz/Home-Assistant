@@ -24,14 +24,14 @@ blueprint:
   domain: automation
   input:
     thermostat_select:
-      name: Thermostat Mode Select Entity
+      name: Thermostat Mode Select Entities
       description: >-
-        The select entity that controls your thermostat mode
+        One or more select entities that control your thermostat mode
         (e.g., select.main_floor_mode). Must have home, sleep, and away options.
       selector:
         entity:
           domain: select
-          multiple: false
+          multiple: true
     home_option:
       name: Home mode option
       description: >-
@@ -39,7 +39,11 @@ blueprint:
         Typically: "home"
       default: home
       selector:
-        text:
+        select:
+          options:
+            - home
+            - sleep
+            - away
     sleep_option:
       name: Sleep mode option
       description: >-
@@ -47,7 +51,11 @@ blueprint:
         Typically: "sleep"
       default: sleep
       selector:
-        text:
+        select:
+          options:
+            - home
+            - sleep
+            - away
     away_option:
       name: Away mode option
       description: >-
@@ -55,7 +63,11 @@ blueprint:
         Typically: "away"
       default: away
       selector:
-        text:
+        select:
+          options:
+            - home
+            - sleep
+            - away
     sleep_start:
       name: Sleep start time
       description: >-
