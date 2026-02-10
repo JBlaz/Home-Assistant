@@ -59,12 +59,9 @@ trigger:
   - platform: sun
     event: sunset
     id: sunset
-  - platform: time
-    at: !input random_start
-    id: random_start
-  - platform: time
-    at: !input random_end
-    id: random_end
+  - platform: time_pattern
+    minutes: "/1"
+    id: tick
   - platform: sun
     event: sunrise
     id: sunrise
@@ -73,6 +70,8 @@ trigger:
 # 2) Derive helper lists/values using those variables.
 variables:
   v_lights: !input lights
+  v_random_start: !input random_start
+  v_random_end: !input random_end
   v_min_events: !input min_events
   v_max_events: !input max_events
   v_min_delay: !input min_delay
@@ -80,9 +79,9 @@ variables:
 
   # Expand selected targets (labels/areas/entities) to a flat list of light entity_ids
   lights_list: >-
-    {{ expand(v_lights.entity_id | default([], true)) 
-       | selectattr('domain','eq','light') 
-       | map(attribute='entity_id') 
+    {{ expand(v_lights.entity_id | default([], true))
+       | selectattr('domain','eq','light')
+       | map(attribute='entity_id')
        | list }}
 
   # Random count in [min,max]
@@ -100,7 +99,10 @@ action:
 
       - conditions:
           - condition: trigger
-            id: random_start
+            id: tick
+          - condition: template
+            value_template: >-
+              {{ now().strftime('%H:%M:%S') == v_random_start }}
         sequence:
           - repeat:
               count: '{{ event_count }}'
@@ -119,7 +121,10 @@ action:
 
       - conditions:
           - condition: trigger
-            id: random_end
+            id: tick
+          - condition: template
+            value_template: >-
+              {{ now().strftime('%H:%M:%S') == v_random_end }}
         sequence:
           - service: light.turn_on
             target: !input lights
