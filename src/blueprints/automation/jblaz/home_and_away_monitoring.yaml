@@ -5,6 +5,13 @@
 #   - A zone.home entity tracking occupancy (0 = away, 1+ = someone home)
 #   - Your script must have a select.select_option action with home/sleep/away options
 #
+# Supported devices (current):
+#   - Thermostats/integrations that expose a select entity with options like
+#     "home", "sleep", and "away" (common with Ecobee setups).
+# Not supported:
+#   - Thermostats that only expose climate presets (preset_mode) and no select entity.
+#   - Thermostats without any selectable mode entity.
+#
 # How to find your select entity:
 #   1. Go to Developer Tools > States
 #   2. Look for entities like "select.thermostat_mode" or similar
@@ -21,6 +28,7 @@ blueprint:
   description: >-
     Controls thermostat mode select entity based on zone.home occupancy and time of day.
     If someone is home, set to Home or Sleep mode. If no one is home, set to Away.
+    Tip: Make sure your select entity offers the exact option names you choose below.
   domain: automation
   input:
     thermostat_select:
@@ -28,6 +36,7 @@ blueprint:
       description: >-
         One or more select entities that control your thermostat mode
         (e.g., select.main_floor_mode). Must have home, sleep, and away options.
+        Tip: You can pick multiple entities if you have more than one thermostat.
       selector:
         entity:
           domain: select
@@ -36,7 +45,7 @@ blueprint:
       name: Home mode option
       description: >-
         The option value to send when someone is home and it is NOT sleep time.
-        Typically: "home"
+        Typically: "home". Must exactly match one of the select entity options.
       default: home
       selector:
         select:
@@ -48,7 +57,7 @@ blueprint:
       name: Sleep mode option
       description: >-
         The option value to send when someone is home DURING sleep hours.
-        Typically: "sleep"
+        Typically: "sleep". Must exactly match one of the select entity options.
       default: sleep
       selector:
         select:
@@ -60,7 +69,7 @@ blueprint:
       name: Away mode option
       description: >-
         The option value to send when nobody is home (zone.home < 1).
-        Typically: "away"
+        Typically: "away". Must exactly match one of the select entity options.
       default: away
       selector:
         select:
