@@ -13,11 +13,17 @@ blueprint:
       default: '23:00:00'
       selector:
         time: {}
-    random_end:
-      name: Random End Time
-      default: '04:30:00'
+    duration_minutes:
+      name: Duration (minutes)
+      description: How long the random events should continue
+      default: 360
       selector:
-        time: {}
+        number:
+          min: 15.0
+          max: 600.0
+          step: 15.0
+          mode: slider
+          unit_of_measurement: minutes
     min_events:
       name: Minimum Events
       default: 2
@@ -74,7 +80,7 @@ trigger:
 variables:
   v_lights: !input lights
   v_random_start: !input random_start
-  v_random_end: !input random_end
+  v_duration_minutes: !input duration_minutes
   v_min_events: !input min_events
   v_max_events: !input max_events
   v_min_delay: !input min_delay
@@ -91,6 +97,10 @@ variables:
   # Random count in [min,max]
   event_count: >-
     {{ range((v_min_events | int), (v_max_events | int) + 1) | random }}
+
+  # Calculate end timestamp (start time + duration in minutes)
+  sequence_end_time: >-
+    {{ now() + timedelta(minutes=(v_duration_minutes | int)) }}
 
 action:
   - choose:
@@ -110,28 +120,29 @@ action:
             value_template: >-
               {{ now().strftime('%H:%M:%S') == v_random_start }}
         sequence:
+          - service: automation.turn_on
+            target:
+              entity_id: this.entity_id
           - repeat:
               count: '{{ event_count }}'
               sequence:
+                # Stop if we've exceeded the duration
+                - condition: template
+                  value_template: '{{ now() < sequence_end_time }}'
                 # Random delay between events
                 - delay:
                     minutes: >-
                       {{ range((v_min_delay | int), (v_max_delay | int) + 1) | random }}
-                # Stop any remaining steps if we've reached sunrise
+                # Stop any remaining steps if we've reached sunrise or exceeded duration
+                - condition: template
+                  value_template: '{{ now() < sequence_end_time }}'
                 - condition: sun
                   before: sunrise
                 # Toggle a random light from the selected set
                 - service: light.toggle
                   target:
                     entity_id: '{{ (lights_list | default([], true)) | random }}'
-
-      - conditions:
-          - condition: trigger
-            id: tick
-          - condition: template
-            value_template: >-
-              {{ now().strftime('%H:%M:%S') == v_random_end }}
-        sequence:
+          # After sequence completes or duration expires, turn on all lights
           - service: light.turn_on
             target: !input lights
 
