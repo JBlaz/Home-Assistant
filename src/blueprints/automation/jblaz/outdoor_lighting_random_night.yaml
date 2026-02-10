@@ -123,25 +123,52 @@ action:
           - service: automation.turn_on
             target:
               entity_id: this.entity_id
+          - service: persistent_notification.create
+            data:
+              title: "🌙 Random Lighting Sequence Started"
+              message: >-
+                Events scheduled: {{ event_count }}
+                Duration: {{ v_duration_minutes }} minutes
+                Sequence end time: {{ (now() + timedelta(minutes=(v_duration_minutes | int))).strftime('%H:%M:%S') }}
           - repeat:
               count: '{{ event_count }}'
               sequence:
                 # Stop if we've exceeded the duration
                 - condition: template
                   value_template: '{{ now() < sequence_end_time }}'
-                # Random delay between events
-                - delay:
-                    minutes: >-
+                # Calculate random delay for this event
+                - variables:
+                    delay_minutes: >-
                       {{ range((v_min_delay | int), (v_max_delay | int) + 1) | random }}
+                    next_toggle_time: >-
+                      {{ (now() + timedelta(minutes=(delay_minutes | int))).strftime('%H:%M:%S') }}
+                    selected_light: '{{ (lights_list | default([], true)) | random }}'
+                # Show what's about to happen
+                - service: persistent_notification.create
+                  data:
+                    title: "⏱️ Event {{ repeat.index }} of {{ event_count }}"
+                    message: >-
+                      Delay: {{ delay_minutes }} minutes
+                      Will toggle at: {{ next_toggle_time }}
+                      Light: {{ state_attr(selected_light, 'friendly_name') | default(selected_light) }}
+                # Apply the delay
+                - delay:
+                    minutes: '{{ delay_minutes }}'
                 # Stop any remaining steps if we've reached sunrise or exceeded duration
                 - condition: template
                   value_template: '{{ now() < sequence_end_time }}'
                 - condition: sun
                   before: sunrise
-                # Toggle a random light from the selected set
+                # Toggle the selected light
                 - service: light.toggle
                   target:
-                    entity_id: '{{ (lights_list | default([], true)) | random }}'
+                    entity_id: '{{ selected_light }}'
+                - service: persistent_notification.create
+                  data:
+                    title: "💡 Toggled Light {{ repeat.index }} of {{ event_count }}"
+                    message: >-
+                      Light: {{ state_attr(selected_light, 'friendly_name') | default(selected_light) }}
+                      New state: {{ states(selected_light) | upper }}
           # After sequence completes or duration expires, turn on all lights
           - service: light.turn_on
             target: !input lights
