@@ -82,7 +82,8 @@ variables:
 
   # Expand selected targets (labels/areas/entities) to a flat list of light entity_ids
   lights_list: >-
-    {{ expand(v_lights.entity_id | default([], true))
+    {% set entity_ids = v_lights.get('entity_id', []) %}
+    {{ expand(entity_ids)
        | selectattr('domain','eq','light')
        | map(attribute='entity_id')
        | list }}
@@ -103,6 +104,8 @@ action:
       - conditions:
           - condition: trigger
             id: tick
+          - condition: template
+            value_template: '{{ lights_list | length > 0 }}'
           - condition: template
             value_template: >-
               {{ now().strftime('%H:%M:%S') == v_random_start }}
