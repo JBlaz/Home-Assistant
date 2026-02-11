@@ -100,19 +100,22 @@ action:
           - condition: trigger
             id: "home_assistant_start"
           - condition: template
-            value_template: "{{ check_on_startup }}"
+            value_template: "{{ check_on_startup | default(true) }}"
           - condition: and
             conditions: !input custom_condition
         sequence:
           # Determine current time and apply appropriate action based on simple time comparison
           - variables:
+              # Get input values as strings
+              start_time_str: "{{ start_time }}"
+              end_time_str: "{{ end_time }}"
               # Convert current time to seconds since midnight
               current_seconds: "{{ (now().hour * 3600) + (now().minute * 60) + now().second }}"
               # Parse start_time and convert to seconds since midnight
-              start_parts: "{{ (start_time ~ '').split(':') }}"
+              start_parts: "{{ start_time_str.split(':') }}"
               start_seconds: "{{ (start_parts[0] | int(0) * 3600) + (start_parts[1] | int(0) * 60) + (start_parts[2] | int(0)) }}"
               # Parse end_time and convert to seconds since midnight
-              end_parts: "{{ (end_time ~ '').split(':') }}"
+              end_parts: "{{ end_time_str.split(':') }}"
               end_seconds: "{{ (end_parts[0] | int(0) * 3600) + (end_parts[1] | int(0) * 60) + (end_parts[2] | int(0)) }}"
               # Determine if we should be in "on" state
               # Handles both same-day (e.g., 8 AM - 6 PM) and wrap-around-midnight (e.g., 8 PM - 6 AM)
