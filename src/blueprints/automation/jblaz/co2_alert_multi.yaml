@@ -106,29 +106,6 @@ action:
               - service: script.turn_on
                 data:
                   entity_id: "{{ optional_script }}"
-    default:
-      - repeat:
-          for_each: !input notify_device
-          sequence:
-            - if: "{{ device_attr(repeat.item, 'name') is not none }}"
-              then:
-                - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
-                  data:
-                    title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
-                    message: >
-                      {{ sensor_name }}
-                      {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
-                      has reached {{ current_co2 }} ppm CO₂
-                      {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
-                      (threshold: {{ threshold_ppm }} ppm).
-                    data:
-                      tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
-
-      - if: "{{ optional_script is not none and optional_script != '' }}"
-        then:
-          - service: script.turn_on
-            data:
-              entity_id: "{{ optional_script }}"
 
 
 mode: parallel
