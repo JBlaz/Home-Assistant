@@ -63,17 +63,18 @@ trigger:
     for: !input duration
 
 variables:
-  triggered_sensor: "{{ trigger.entity_id }}"
-  current_co2: "{{ states(trigger.entity_id) | float(0) }}"
-  sensor_name: "{{ state_attr(trigger.entity_id, 'friendly_name') or 'Unknown Sensor' }}"
+  co2_sensors_list: !input co2_sensors
+  triggered_sensor: "{{ trigger.entity_id if trigger.entity_id is defined else co2_sensors_list[0] }}"
+  current_co2: "{{ states(triggered_sensor) | float(0) }}"
+  sensor_name: "{{ state_attr(triggered_sensor, 'friendly_name') or 'Unknown Sensor' }}"
   device_name: >
-    {%- set dev_id = state_attr(trigger.entity_id, 'device_id') -%}
+    {%- set dev_id = state_attr(triggered_sensor, 'device_id') -%}
     {%- if dev_id -%}
       {{ device_attr(dev_id, 'name') or 'Unknown Device' }}
     {%- else -%}
       Unknown Device
     {%- endif -%}
-  room_name: "{{ area_name(trigger.entity_id) or 'Unknown Room' }}"
+  room_name: "{{ area_name(triggered_sensor) or 'Unknown Room' }}"
   threshold_ppm: !input threshold
   optional_script: !input optional_script
 
