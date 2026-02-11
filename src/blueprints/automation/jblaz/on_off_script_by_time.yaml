@@ -83,7 +83,8 @@ action:
       - conditions:
           - condition: trigger
             id: "start_time"
-          - !input custom_condition
+          - condition: and
+            conditions: !input custom_condition
         sequence:
           - action: !input start_action
 
@@ -91,7 +92,8 @@ action:
       - conditions:
           - condition: trigger
             id: "end_time"
-          - !input custom_condition
+          - condition: and
+            conditions: !input custom_condition
         sequence:
           - action: !input end_action
 
@@ -101,7 +103,8 @@ action:
             id: "home_assistant_start"
           - condition: template
             value_template: "{{ check_on_startup }}"
-          - !input custom_condition
+          - condition: and
+            conditions: !input custom_condition
         sequence:
           # Determine current time and apply appropriate action based on simple time comparison
           - variables:
