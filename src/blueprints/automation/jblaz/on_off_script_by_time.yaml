@@ -1,0 +1,129 @@
+blueprint:
+  name: On/Off Script by Time
+  description: >
+    Execute start and end actions at specific times daily, with optional weekday filtering.
+    Includes automatic startup state correction after server reboots or crashes.
+    Useful for scheduling devices (lights, fans, locks, etc.) with exact on/off times.
+    Handles wrap-around midnight schedules (e.g., 8 PM to 6 AM).
+  domain: automation
+  input:
+    start_time:
+      name: Start Time
+      description: >
+        Time to trigger the start action (e.g., 07:30 or 07:30:45 for seconds precision).
+        Use 24-hour format.
+      selector:
+        time:
+      default: "07:30:00"
+
+    end_time:
+      name: End Time
+      description: >
+        Time to trigger the end action (e.g., 20:30 or 20:30:00).
+        Can be earlier than start time (e.g., 22:00 to 06:00 for overnight schedules).
+      selector:
+        time:
+      default: "20:30:00"
+
+    start_action:
+      name: Start Action
+      description: >
+        Action(s) to execute at start time. Usually "turn on" but can be any action.
+        Examples: turn on lights, open blinds, arm security system.
+      selector:
+        action:
+      default: []
+
+    end_action:
+      name: End Action
+      description: >
+        Action(s) to execute at end time. Usually "turn off" but can be any action.
+        Examples: turn off lights, close blinds, disarm security system.
+      selector:
+        action:
+      default: []
+
+    check_on_startup:
+      name: Check State on Startup
+      description: >
+        If enabled, when Home Assistant starts or restarts, the automation will check
+        the current time and execute the appropriate action. This ensures devices are
+        in the correct state after crashes or power failures. For example, if restarted
+        at 9 AM and start time is 7:30 AM, the start action will execute immediately.
+      selector:
+        boolean:
+      default: true
+
+    custom_condition:
+      name: Custom Condition (Optional)
+      description: >
+        Add additional conditions that must be true for the automation to run.
+        Useful for restricting execution based on presence, weather, or other states.
+        Leave empty for no additional conditions.
+      selector:
+        condition:
+      default: []
+
+trigger:
+  - platform: time
+    at: !input start_time
+    id: "start_time"
+
+  - platform: time
+    at: !input end_time
+    id: "end_time"
+
+  - platform: homeassistant
+    event: start
+    id: "home_assistant_start"
+
+action:
+  - choose:
+      # Handle start time trigger
+      - conditions:
+          - condition: trigger
+            id: "start_time"
+          - !input custom_condition
+        sequence:
+          - action: !input start_action
+
+      # Handle end time trigger
+      - conditions:
+          - condition: trigger
+            id: "end_time"
+          - !input custom_condition
+        sequence:
+          - action: !input end_action
+
+      # Handle Home Assistant startup
+      - conditions:
+          - condition: trigger
+            id: "home_assistant_start"
+          - condition: template
+            value_template: "{{ check_on_startup }}"
+          - !input custom_condition
+        sequence:
+          # Determine current time and apply appropriate action based on simple time comparison
+          - variables:
+              # Convert current time to seconds since midnight
+              current_seconds: "{{ (now().hour * 3600) + (now().minute * 60) + now().second }}"
+              # Parse start_time and convert to seconds since midnight
+              start_parts: "{{ start_time.split(':') }}"
+              start_seconds: "{{ (start_parts[0] | int * 3600) + (start_parts[1] | int * 60) + (start_parts[2] | int(0)) }}"
+              # Parse end_time and convert to seconds since midnight
+              end_parts: "{{ end_time.split(':') }}"
+              end_seconds: "{{ (end_parts[0] | int * 3600) + (end_parts[1] | int * 60) + (end_parts[2] | int(0)) }}"
+              # Determine if we should be in "on" state
+              # Handles both same-day (e.g., 8 AM - 6 PM) and wrap-around-midnight (e.g., 8 PM - 6 AM)
+              should_be_on: "{% if start_seconds < end_seconds %}{{ current_seconds >= start_seconds and current_seconds < end_seconds }}{% else %}{{ current_seconds >= start_seconds or current_seconds < end_seconds }}{% endif %}"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ should_be_on }}"
+                sequence:
+                  - action: !input start_action
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not should_be_on }}"
+                sequence:
+                  - action: !input end_action
