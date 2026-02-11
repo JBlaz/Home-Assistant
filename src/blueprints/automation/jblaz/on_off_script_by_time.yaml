@@ -26,22 +26,24 @@ blueprint:
       default: "20:30:00"
 
     start_action:
-      name: Start Action
+      name: Start Script
       description: >
-        Action(s) to execute at start time. Usually "turn on" but can be any action.
-        Examples: turn on lights, open blinds, arm security system.
+        Script to execute at start time. Put any actions you want in the script
+        (turn on lights, open blinds, arm security system, etc.).
       selector:
-        action:
-      default: []
+        entity:
+          domain: script
+          multiple: false
 
     end_action:
-      name: End Action
+      name: End Script
       description: >
-        Action(s) to execute at end time. Usually "turn off" but can be any action.
-        Examples: turn off lights, close blinds, disarm security system.
+        Script to execute at end time. Put any actions you want in the script
+        (turn off lights, close blinds, disarm security system, etc.).
       selector:
-        action:
-      default: []
+        entity:
+          domain: script
+          multiple: false
 
     check_on_startup:
       name: Check State on Startup
@@ -85,7 +87,10 @@ action:
             id: "start_time"
           - condition: and
             conditions: !input custom_condition
-        sequence: !input start_action
+        sequence:
+          - service: script.turn_on
+            target:
+              entity_id: !input start_action
 
       # Handle end time trigger
       - conditions:
@@ -93,7 +98,10 @@ action:
             id: "end_time"
           - condition: and
             conditions: !input custom_condition
-        sequence: !input end_action
+        sequence:
+          - service: script.turn_on
+            target:
+              entity_id: !input end_action
 
       # Handle Home Assistant startup
       - conditions:
@@ -121,8 +129,14 @@ action:
               - conditions:
                   - condition: template
                     value_template: "{{ should_be_on }}"
-                sequence: !input start_action
+                sequence:
+                  - service: script.turn_on
+                    target:
+                      entity_id: !input start_action
               - conditions:
                   - condition: template
                     value_template: "{{ not should_be_on }}"
-                sequence: !input end_action
+                sequence:
+                  - service: script.turn_on
+                    target:
+                      entity_id: !input end_action
