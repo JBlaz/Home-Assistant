@@ -85,8 +85,7 @@ action:
             id: "start_time"
           - condition: and
             conditions: !input custom_condition
-        sequence:
-          - action: !input start_action
+        sequence: !input start_action
 
       # Handle end time trigger
       - conditions:
@@ -94,8 +93,7 @@ action:
             id: "end_time"
           - condition: and
             conditions: !input custom_condition
-        sequence:
-          - action: !input end_action
+        sequence: !input end_action
 
       # Handle Home Assistant startup
       - conditions:
@@ -123,10 +121,8 @@ action:
               - conditions:
                   - condition: template
                     value_template: "{{ should_be_on }}"
-                sequence:
-                  - action: !input start_action
+                sequence: !input start_action
               - conditions:
                   - condition: template
                     value_template: "{{ not should_be_on }}"
-                sequence:
-                  - action: !input end_action
+                sequence: !input end_action
