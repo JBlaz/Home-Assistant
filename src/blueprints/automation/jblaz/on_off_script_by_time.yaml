@@ -106,9 +106,9 @@ action:
         sequence:
           # Determine current time and apply appropriate action based on simple time comparison
           - variables:
-              # Convert inputs to strings explicitly
-              start_time_str: "{{ start_time | string }}"
-              end_time_str: "{{ end_time | string }}"
+              # Pull blueprint inputs directly
+              start_time_str: !input start_time
+              end_time_str: !input end_time
               # Convert current time to seconds since midnight
               current_seconds: "{{ (now().hour * 3600) + (now().minute * 60) + now().second }}"
               # Parse start_time and convert to seconds since midnight
