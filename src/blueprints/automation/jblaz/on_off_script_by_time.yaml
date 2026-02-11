@@ -1,7 +1,7 @@
 blueprint:
   name: On/Off Script by Time
   description: >
-    Execute start and end actions at specific times daily, with optional weekday filtering.
+    Execute start and end actions at specific times daily, with optional condition checking.
     Includes automatic startup state correction after server reboots or crashes.
     Useful for scheduling devices (lights, fans, locks, etc.) with exact on/off times.
     Handles wrap-around midnight schedules (e.g., 8 PM to 6 AM).
@@ -10,8 +10,7 @@ blueprint:
     start_time:
       name: Start Time
       description: >
-        Time to trigger the start action (e.g., 07:30 or 07:30:45 for seconds precision).
-        Use 24-hour format.
+        Time to trigger the start action.
       selector:
         time:
       default: "07:30:00"
@@ -19,8 +18,7 @@ blueprint:
     end_time:
       name: End Time
       description: >
-        Time to trigger the end action (e.g., 20:30 or 20:30:00).
-        Can be earlier than start time (e.g., 22:00 to 06:00 for overnight schedules).
+        Time to trigger the end action. Can be earlier than start time for overnight schedules (e.g., 20:00 to 06:00).
       selector:
         time:
       default: "20:30:00"
@@ -28,7 +26,7 @@ blueprint:
     start_action:
       name: Start Action
       description: >
-        Action(s) to execute at start time. Usually "turn on" but can be any action.
+        Action(s) to execute at start time. (Will be reexecuted on startup if the time of the boot falls within the interval described by start_time and end_time)
         Examples: turn on lights, open blinds, arm security system.
       selector:
         action:
@@ -37,7 +35,7 @@ blueprint:
     end_action:
       name: End Action
       description: >
-        Action(s) to execute at end time. Usually "turn off" but can be any action.
+        Action(s) to execute at end time. (Will be reexecuted on startup if the time of the boot falls outside the interval described by start_time and end_time)
         Examples: turn off lights, close blinds, disarm security system.
       selector:
         action:
@@ -119,7 +117,12 @@ action:
               end_seconds: "{{ ((end_parts[0] | default('0') | int(0)) * 3600) + ((end_parts[1] | default('0') | int(0)) * 60) + (end_parts[2] | default('0') | int(0)) }}"
               # Determine if we should be in "on" state
               # Handles both same-day (e.g., 8 AM - 6 PM) and wrap-around-midnight (e.g., 8 PM - 6 AM)
-              should_be_on: "{% if start_seconds < end_seconds %}{{ current_seconds >= start_seconds and current_seconds < end_seconds }}{% else %}{{ current_seconds >= start_seconds or current_seconds < end_seconds }}{% endif %}"
+              should_be_on: >-
+                {% if start_seconds < end_seconds %}
+                  {{ current_seconds >= start_seconds and current_seconds < end_seconds }}
+                {% else %}
+                  {{ current_seconds >= start_seconds or current_seconds < end_seconds }}
+                {% endif %}
           - choose:
               - conditions:
                   - condition: template
