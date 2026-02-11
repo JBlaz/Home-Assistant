@@ -1,15 +1,12 @@
 blueprint:
-  name: CO₂ Alert – Advanced (Multi-Sensor)
-  description: >
-    Advanced CO₂ alert with per-sensor thresholds, notifications,
-    optional scripts, and recovery suppression.
-    Configure sensors once with their thresholds.
+  name: CO₂ Alert (Multi-Sensor)
+  description: Multi-sensor CO₂ alert with mobile notifications and optional script runner.
   domain: automation
 
   input:
     co2_sensors:
       name: CO₂ Sensors
-      description: Select one or more CO₂ sensors to monitor
+      description: Select one or more CO₂ sensors to monitor.
       selector:
         entity:
           multiple: true
@@ -18,7 +15,7 @@ blueprint:
 
     threshold:
       name: Alert Threshold (ppm)
-      description: CO₂ level at which to trigger alert for all sensors
+      description: CO₂ level that triggers the alert for all sensors.
       default: 1000
       selector:
         number:
@@ -29,7 +26,7 @@ blueprint:
 
     notify_device:
       name: "Devices to Notify"
-      description: "Select mobile devices to receive notifications"
+      description: "Select mobile devices to receive notifications."
       default: []
       selector:
         device:
@@ -37,16 +34,23 @@ blueprint:
           multiple: true
 
     optional_script:
-      name: Optional Script to Run
-      description: Script to execute when alert is triggered (optional)
+      name: Script to Run (Optional)
+      description: Script to run when the alert is triggered.
       default: ""
       selector:
         entity:
           domain: script
 
+    action_conditions:
+      name: Action Conditions (Optional)
+      description: Additional conditions required before notifications or script run.
+      default: []
+      selector:
+        condition: {}
+
     duration:
       name: Time Above Threshold
-      description: How long the sensor must stay above threshold before alerting
+      description: How long the sensor must stay above the threshold before alerting.
       default:
         minutes: 2
       selector:
@@ -76,30 +80,55 @@ variables:
 condition: []
 
 action:
-  - repeat:
-      for_each: !input notify_device
-      sequence:
-        - if: "{{ device_attr(repeat.item, 'name') is not none }}"
-          then:
-            - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
-              data:
-                title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
-                message: >
-                  {{ sensor_name }}
-                  {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
-                  has reached {{ current_co2 }} ppm CO₂
-                  {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
-                  (threshold: {{ threshold_ppm }} ppm).
-                data:
-                  tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+  - choose:
+      - conditions: !input action_conditions
+        sequence:
+          - repeat:
+              for_each: !input notify_device
+              sequence:
+                - if: "{{ device_attr(repeat.item, 'name') is not none }}"
+                  then:
+                    - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                      data:
+                        title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
+                        message: >
+                          {{ sensor_name }}
+                          {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
+                          has reached {{ current_co2 }} ppm CO₂
+                          {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
+                          (threshold: {{ threshold_ppm }} ppm).
+                        data:
+                          tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
 
-  - if: "{{ optional_script is not none and optional_script != '' }}"
-    then:
-      - service: script.turn_on
-        data:
-          entity_id: "{{ optional_script }}"
+          - if: "{{ optional_script is not none and optional_script != '' }}"
+            then:
+              - service: script.turn_on
+                data:
+                  entity_id: "{{ optional_script }}"
+    default:
+      - repeat:
+          for_each: !input notify_device
+          sequence:
+            - if: "{{ device_attr(repeat.item, 'name') is not none }}"
+              then:
+                - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                  data:
+                    title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
+                    message: >
+                      {{ sensor_name }}
+                      {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
+                      has reached {{ current_co2 }} ppm CO₂
+                      {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
+                      (threshold: {{ threshold_ppm }} ppm).
+                    data:
+                      tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+
+      - if: "{{ optional_script is not none and optional_script != '' }}"
+        then:
+          - service: script.turn_on
+            data:
+              entity_id: "{{ optional_script }}"
 
 
 mode: parallel
 max: 10
-
