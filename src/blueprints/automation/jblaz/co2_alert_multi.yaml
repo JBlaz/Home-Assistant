@@ -52,24 +52,6 @@ blueprint:
       selector:
         duration: {}
 
-    recovery_ppm:
-      name: Recovery Threshold (reset alerts)
-      description: CO₂ level below which alert is considered resolved
-      default: 800
-      selector:
-        number:
-          min: 400
-          max: 2000
-          step: 50
-          unit_of_measurement: ppm
-
-    recovery_enabled:
-      name: Enable Recovery Wait
-      description: Wait for CO₂ to drop below recovery threshold before allowing another alert
-      default: true
-      selector:
-        boolean: {}
-
 trigger:
   - platform: numeric_state
     entity_id: !input co2_sensors
@@ -78,7 +60,7 @@ trigger:
 
 variables:
   triggered_sensor: "{{ trigger.entity_id }}"
-  current_co2: "{{ trigger.to_state.state | int(0) }}"
+  current_co2: "{{ trigger.to_state.state | float(0) }}"
   sensor_name: "{{ trigger.to_state.name }}"
   device_name: >
     {%- set dev_id = trigger.to_state.device_id -%}
@@ -89,6 +71,7 @@ variables:
     {%- endif -%}
   room_name: "{{ area_name(trigger.to_state.entity_id) or 'Unknown Room' }}"
   threshold_ppm: !input threshold
+  optional_script: !input optional_script
 
 condition: []
 
@@ -96,28 +79,26 @@ action:
   - repeat:
       for_each: !input notify_device
       sequence:
-        - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | replace(' ', '_') | replace('-', '_') | lower }}
-          data:
-            title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
-            message: >
-              {{ sensor_name }}
-              {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
-              has reached {{ current_co2 }} ppm CO₂
-              {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
-              (threshold: {{ threshold_ppm }} ppm).
-            data:
-              tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+        - if: "{{ device_attr(repeat.item, 'name') is not none }}"
+          then:
+            - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+              data:
+                title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
+                message: >
+                  {{ sensor_name }}
+                  {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
+                  has reached {{ current_co2 }} ppm CO₂
+                  {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
+                  (threshold: {{ threshold_ppm }} ppm).
+                data:
+                  tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
 
-  - if: "{{ optional_script != '' }}"
+  - if: "{{ optional_script is not none and optional_script != '' }}"
     then:
       - service: script.turn_on
         data:
           entity_id: "{{ optional_script }}"
 
-  # Wait until CO₂ recovers below threshold before allowing another alert
-  - if: "{{ recovery_enabled }}"
-    then:
-      - wait_template: "{{ states(triggered_sensor) | int(0) < (recovery_ppm | int(800)) }}"
 
 mode: parallel
 max: 10
