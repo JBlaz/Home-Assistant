@@ -101,7 +101,7 @@ action:
                   then:
                     - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
                       data:
-                        message: clear_notification
+                        message: "clear_notification"
                         data:
                           tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
 
@@ -117,7 +117,8 @@ action:
               {% else %}
                 true
               {% endif %}
-          - conditions: !input action_conditions
+          - condition: and
+            conditions: !input action_conditions
         sequence:
           - repeat:
               for_each: !input notify_device
