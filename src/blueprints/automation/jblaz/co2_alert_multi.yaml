@@ -135,7 +135,7 @@ action:
                           (threshold: {{ threshold_ppm }} ppm).
                         data:
                           tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
-                          sticky: true
+                          sticky: "true"
                           persistent: true
                           channel: co2_alerts
 
