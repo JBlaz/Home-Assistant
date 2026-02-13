@@ -61,6 +61,14 @@ trigger:
     entity_id: !input co2_sensors
     above: !input threshold
     for: !input duration
+    id: alert_start
+  - platform: numeric_state
+    entity_id: !input co2_sensors
+    below: !input threshold
+    id: alert_clear
+  - platform: state
+    entity_id: !input co2_sensors
+    id: alert_update
 
 variables:
   co2_sensors_list: !input co2_sensors
@@ -82,7 +90,34 @@ condition: []
 
 action:
   - choose:
-      - conditions: !input action_conditions
+      - conditions:
+          - condition: trigger
+            id: alert_clear
+        sequence:
+          - repeat:
+              for_each: !input notify_device
+              sequence:
+                - if: "{{ device_attr(repeat.item, 'name') is not none }}"
+                  then:
+                    - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                      data:
+                        message: clear_notification
+                        data:
+                          tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+
+      - conditions:
+          - condition: trigger
+            id:
+              - alert_start
+              - alert_update
+          - condition: template
+            value_template: >
+              {% if trigger.id == 'alert_update' %}
+                {{ trigger.from_state is defined and trigger.from_state is not none and trigger.from_state.state | float(0) >= threshold_ppm and trigger.to_state.state | float(0) >= threshold_ppm }}
+              {% else %}
+                true
+              {% endif %}
+          - conditions: !input action_conditions
         sequence:
           - repeat:
               for_each: !input notify_device
@@ -100,8 +135,11 @@ action:
                           (threshold: {{ threshold_ppm }} ppm).
                         data:
                           tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+                          sticky: true
+                          persistent: true
+                          channel: co2_alerts
 
-          - if: "{{ optional_script is not none and optional_script != '' }}"
+          - if: "{{ trigger.id == 'alert_start' and optional_script is not none and optional_script != '' }}"
             then:
               - service: script.turn_on
                 data:
