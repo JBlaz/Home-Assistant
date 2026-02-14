@@ -92,12 +92,31 @@ variables:
   v_max_delay: !input max_delay
   v_notifications: !input enable_notifications
 
+  # Fixed: Properly expand all target types (label, area, device, entity)
   lights_list: >-
-    {% set entity_ids = v_lights.get('entity_id', []) %}
-    {{ expand(entity_ids)
-       | selectattr('domain','eq','light')
-       | map(attribute='entity_id')
-       | list }}
+    {% set ns = namespace(entities=[]) %}
+    {% if v_lights.entity_id is defined %}
+      {% set ns.entities = ns.entities + v_lights.entity_id %}
+    {% endif %}
+    {% if v_lights.area_id is defined %}
+      {% set areas = v_lights.area_id if v_lights.area_id is iterable and v_lights.area_id is not string else [v_lights.area_id] %}
+      {% for area in areas %}
+        {% set ns.entities = ns.entities + (area_entities(area) | select('match', '^light\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if v_lights.device_id is defined %}
+      {% set devices = v_lights.device_id if v_lights.device_id is iterable and v_lights.device_id is not string else [v_lights.device_id] %}
+      {% for device in devices %}
+        {% set ns.entities = ns.entities + (device_entities(device) | select('match', '^light\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {% if v_lights.label_id is defined %}
+      {% set labels = v_lights.label_id if v_lights.label_id is iterable and v_lights.label_id is not string else [v_lights.label_id] %}
+      {% for label in labels %}
+        {% set ns.entities = ns.entities + (label_entities(label) | select('match', '^light\.') | list) %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.entities | unique | list }}
 
   event_count: >-
     {{ range((v_min_events | int), (v_max_events | int) + 1) | random }}
