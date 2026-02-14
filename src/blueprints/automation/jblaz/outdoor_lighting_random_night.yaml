@@ -1,6 +1,6 @@
 blueprint:
   name: Outdoor Lights – Independent Random Activity (Improved)
-  description: Randomly toggles individual outdoor lights overnight
+  description: Randomly toggles individual outdoor lights overnight Version: 0.0.0
   domain: automation
   input:
     lights:
