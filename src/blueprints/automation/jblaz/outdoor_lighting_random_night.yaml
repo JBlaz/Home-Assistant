@@ -1,6 +1,6 @@
 blueprint:
-  name: Outdoor Lights – Independent Random Activity (Fixed)
-  description: Randomly toggles individual outdoor lights overnight Version - 0.0.1
+  name: Outdoor Lights – Independent Random Activity (Fixed v2)
+  description: Randomly toggles individual outdoor lights overnight
   domain: automation
   input:
     lights:
@@ -92,45 +92,53 @@ variables:
   v_max_delay: !input max_delay
   v_notifications: !input enable_notifications
 
-  # Get all light entities from states, then filter by target
+  # Simplified light list builder
   lights_list: >-
-    {% set result = namespace(lights=[]) %}
-    {% set all_lights = states.light | map(attribute='entity_id') | list %}
+    {% set result = [] %}
     
-    {# Handle entity_id #}
+    {# Handle direct entity_id #}
     {% if v_lights.entity_id is defined %}
-      {% set entities = [v_lights.entity_id] if v_lights.entity_id is string else v_lights.entity_id %}
-      {% set result.lights = result.lights + entities %}
+      {% if v_lights.entity_id is string %}
+        {% set result = result + [v_lights.entity_id] %}
+      {% else %}
+        {% set result = result + v_lights.entity_id %}
+      {% endif %}
     {% endif %}
     
     {# Handle area_id #}
     {% if v_lights.area_id is defined %}
-      {% set areas = [v_lights.area_id] if v_lights.area_id is string else v_lights.area_id %}
-      {% for area in areas %}
-        {% set result.lights = result.lights + (area_entities(area) | select('match', '^light\.') | list) %}
-      {% endfor %}
+      {% if v_lights.area_id is string %}
+        {% set result = result + (area_entities(v_lights.area_id) | select('match', '^light\.') | list) %}
+      {% else %}
+        {% for area in v_lights.area_id %}
+          {% set result = result + (area_entities(area) | select('match', '^light\.') | list) %}
+        {% endfor %}
+      {% endif %}
     {% endif %}
     
     {# Handle device_id #}
     {% if v_lights.device_id is defined %}
-      {% set devices = [v_lights.device_id] if v_lights.device_id is string else v_lights.device_id %}
-      {% for device in devices %}
-        {% set result.lights = result.lights + (device_entities(device) | select('match', '^light\.') | list) %}
-      {% endfor %}
+      {% if v_lights.device_id is string %}
+        {% set result = result + (device_entities(v_lights.device_id) | select('match', '^light\.') | list) %}
+      {% else %}
+        {% for device in v_lights.device_id %}
+          {% set result = result + (device_entities(device) | select('match', '^light\.') | list) %}
+        {% endfor %}
+      {% endif %}
     {% endif %}
     
-    {# Handle label_id - check each light's labels attribute #}
+    {# Handle label_id #}
     {% if v_lights.label_id is defined %}
-      {% set target_labels = [v_lights.label_id] if v_lights.label_id is string else v_lights.label_id %}
-      {% for light in all_lights %}
-        {% set light_labels = state_attr(light, 'labels') | default([]) %}
-        {% if light_labels | select('in', target_labels) | list | length > 0 %}
-          {% set result.lights = result.lights + [light] %}
-        {% endif %}
-      {% endfor %}
+      {% if v_lights.label_id is string %}
+        {% set result = result + (label_entities(v_lights.label_id) | select('match', '^light\.') | list) %}
+      {% else %}
+        {% for label in v_lights.label_id %}
+          {% set result = result + (label_entities(label) | select('match', '^light\.') | list) %}
+        {% endfor %}
+      {% endif %}
     {% endif %}
     
-    {{ result.lights | unique | list }}
+    {{ result | unique | list }}
 
   event_count: >-
     {{ range((v_min_events | int), (v_max_events | int) + 1) | random }}
@@ -157,17 +165,25 @@ action:
           - condition: sun
             before: sunrise
         sequence:
-          # Debug notification - show what lights were found
+          # Debug notification
           - if:
               - condition: template
                 value_template: '{{ v_notifications }}'
             then:
               - service: persistent_notification.create
                 data:
-                  title: "🔍 Debug Info"
+                  title: "🔍 Debug - Label Info"
                   message: >-
+                    Input: {{ v_lights }}
+                    
                     Lights found: {{ lights_list | length }}
-                    {{ lights_list | join(', ') if lights_list | length > 0 else 'NO LIGHTS FOUND!' }}
+                    {% if lights_list | length > 0 %}
+                    {{ lights_list | join(', ') }}
+                    {% else %}
+                    NO LIGHTS FOUND!
+                    
+                    Check that 'outdoor_lights' label exists and has lights tagged.
+                    {% endif %}
           
           # Only proceed if we have lights
           - condition: template
