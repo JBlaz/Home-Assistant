@@ -138,7 +138,6 @@ action:
                           tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
                           sticky: "true"
                           persistent: true
-                          channel: co2_alerts
 
           - if: "{{ trigger.id == 'alert_start' and optional_script is not none and optional_script != '' }}"
             then:
