@@ -1,5 +1,5 @@
 blueprint:
-  name: Outdoor Lights – Independent Random Activity (Label Safe)
+  name: Outdoor Lights – Independent Random Activity (Improved)
   description: Randomly toggles individual outdoor lights overnight
   domain: automation
   input:
@@ -10,6 +10,7 @@ blueprint:
         target: {}
     random_start:
       name: Random Start Time
+      description: The time lights should start randomly turning on or off
       default: '23:00:00'
       selector:
         time: {}
@@ -26,6 +27,7 @@ blueprint:
           unit_of_measurement: minutes
     min_events:
       name: Minimum Events
+      description: Minimum number of random toggle events
       default: 2
       selector:
         number:
@@ -35,6 +37,7 @@ blueprint:
           mode: slider
     max_events:
       name: Maximum Events
+      description: Maximum number of random toggle events
       default: 8
       selector:
         number:
@@ -44,6 +47,7 @@ blueprint:
           mode: slider
     min_delay:
       name: Minimum Delay (minutes)
+      description: Minimum delay between toggle events
       default: 10
       selector:
         number:
@@ -53,6 +57,7 @@ blueprint:
           mode: slider
     max_delay:
       name: Maximum Delay (minutes)
+      description: Maximum delay between toggle events
       default: 60
       selector:
         number:
@@ -60,33 +65,33 @@ blueprint:
           max: 240.0
           step: 5.0
           mode: slider
+    enable_notifications:
+      name: Enable Notifications
+      description: Show notifications for each toggle event
+      default: false
+      selector:
+        boolean: {}
 
 trigger:
   - platform: sun
     event: sunset
     id: sunset
-    alias: Sunset
-  - platform: time_pattern
-    minutes: "/1"
-    id: tick
-    alias: Minute Tick
+  - platform: time
+    at: !input random_start
+    id: random_start
   - platform: sun
     event: sunrise
     id: sunrise
-    alias: Sunrise
 
-# 1) Bind inputs to variables that can be used in templates.
-# 2) Derive helper lists/values using those variables.
 variables:
   v_lights: !input lights
-  v_random_start: !input random_start
   v_duration_minutes: !input duration_minutes
   v_min_events: !input min_events
   v_max_events: !input max_events
   v_min_delay: !input min_delay
   v_max_delay: !input max_delay
+  v_notifications: !input enable_notifications
 
-  # Expand selected targets (labels/areas/entities) to a flat list of light entity_ids
   lights_list: >-
     {% set entity_ids = v_lights.get('entity_id', []) %}
     {{ expand(entity_ids)
@@ -94,16 +99,17 @@ variables:
        | map(attribute='entity_id')
        | list }}
 
-  # Random count in [min,max]
   event_count: >-
     {{ range((v_min_events | int), (v_max_events | int) + 1) | random }}
 
-  # Calculate end timestamp (start time + duration in minutes)
   sequence_end_time: >-
     {{ now() + timedelta(minutes=(v_duration_minutes | int)) }}
 
+condition: []
+
 action:
   - choose:
+      # SUNSET: Turn all lights on
       - conditions:
           - condition: trigger
             id: sunset
@@ -111,68 +117,71 @@ action:
           - service: light.turn_on
             target: !input lights
 
+      # RANDOM START: Begin random toggle sequence
       - conditions:
           - condition: trigger
-            id: tick
+            id: random_start
           - condition: template
             value_template: '{{ lights_list | length > 0 }}'
-          - condition: template
-            value_template: >-
-              {{ now().strftime('%H:%M:%S') == v_random_start }}
+          - condition: sun
+            before: sunrise
         sequence:
-          - service: automation.turn_on
-            target:
-              entity_id: this.entity_id
-          - service: persistent_notification.create
-            data:
-              title: "🌙 Random Lighting Sequence Started"
-              message: >-
-                Events scheduled: {{ event_count }}
-                Duration: {{ v_duration_minutes }} minutes
-                Sequence end time: {{ (now() + timedelta(minutes=(v_duration_minutes | int))).strftime('%H:%M:%S') }}
+          - if:
+              - condition: template
+                value_template: '{{ v_notifications }}'
+            then:
+              - service: persistent_notification.create
+                data:
+                  title: "🌙 Random Lighting Started"
+                  message: >-
+                    Events: {{ event_count }} | Duration: {{ v_duration_minutes }}min
+          
           - repeat:
               count: '{{ event_count }}'
               sequence:
-                # Stop if we've exceeded the duration
-                - condition: template
-                  value_template: '{{ now() < sequence_end_time }}'
-                # Calculate random delay for this event
-                - variables:
-                    delay_minutes: >-
-                      {{ range((v_min_delay | int), (v_max_delay | int) + 1) | random }}
-                    next_toggle_time: >-
-                      {{ (now() + timedelta(minutes=(delay_minutes | int))).strftime('%H:%M:%S') }}
-                    selected_light: '{{ (lights_list | default([], true)) | random }}'
-                # Show what's about to happen
-                - service: persistent_notification.create
-                  data:
-                    title: "⏱️ Event {{ repeat.index }} of {{ event_count }}"
-                    message: >-
-                      Delay: {{ delay_minutes }} minutes
-                      Will toggle at: {{ next_toggle_time }}
-                      Light: {{ state_attr(selected_light, 'friendly_name') | default(selected_light) }}
-                # Apply the delay
-                - delay:
-                    minutes: '{{ delay_minutes }}'
-                # Stop any remaining steps if we've reached sunrise or exceeded duration
+                # Stop if duration exceeded or sunrise
                 - condition: template
                   value_template: '{{ now() < sequence_end_time }}'
                 - condition: sun
                   before: sunrise
-                # Toggle the selected light
+                
+                # Random delay and light selection
+                - variables:
+                    delay_minutes: >-
+                      {{ range((v_min_delay | int), (v_max_delay | int) + 1) | random }}
+                    selected_light: '{{ lights_list | random }}'
+                
+                # Wait
+                - delay:
+                    minutes: '{{ delay_minutes }}'
+                
+                # Final check before toggling
+                - condition: template
+                  value_template: '{{ now() < sequence_end_time }}'
+                - condition: sun
+                  before: sunrise
+                
+                # Toggle the light
                 - service: light.toggle
                   target:
                     entity_id: '{{ selected_light }}'
-                - service: persistent_notification.create
-                  data:
-                    title: "💡 Toggled Light {{ repeat.index }} of {{ event_count }}"
-                    message: >-
-                      Light: {{ state_attr(selected_light, 'friendly_name') | default(selected_light) }}
-                      New state: {{ states(selected_light) | upper }}
-          # After sequence completes or duration expires, turn on all lights
+                
+                # Optional notification
+                - if:
+                    - condition: template
+                      value_template: '{{ v_notifications }}'
+                  then:
+                    - service: persistent_notification.create
+                      data:
+                        title: "💡 Light Toggled ({{ repeat.index }}/{{ event_count }})"
+                        message: >-
+                          {{ state_attr(selected_light, 'friendly_name') }}: {{ states(selected_light) | upper }}
+          
+          # After sequence, turn all lights back on
           - service: light.turn_on
             target: !input lights
 
+      # SUNRISE: Turn all lights off
       - conditions:
           - condition: trigger
             id: sunrise
