@@ -309,11 +309,14 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: 📈 Graphs (48 h)
+            heading: 📈 Graphs (48h - History)
             heading_style: title
-          - type: history-graph
-            title: Humidity – All Rooms
+          - type: custom:mini-graph-card
+            name: Humidity
             hours_to_show: 48
+            show:
+              labels: true
+              labels_secondary: true
             entities:
               - entity: sensor.kitchen_airgradient_humidity
                 name: Kitchen
@@ -323,8 +326,8 @@ views:
                 name: Ezra's Room
               - entity: sensor.grant_s_room_airgradient_humidity
                 name: Grant's Room
-          - type: history-graph
-            title: Temperature – All Rooms
+          - type: custom:mini-graph-card
+            name: Temperature
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_temperature
@@ -336,7 +339,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_temperature
                 name: Grant's Room
           - type: history-graph
-            title: CO₂ – All Rooms
+            title: CO₂
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_carbon_dioxide
@@ -348,7 +351,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_carbon_dioxide
                 name: Grant's Room
           - type: history-graph
-            title: VOC Index – All Rooms
+            title: VOC Index
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_voc_index
@@ -360,7 +363,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_voc_index
                 name: Grant's Room
           - type: history-graph
-            title: NOx Index – All Rooms
+            title: NOx Index
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_nox_index
@@ -372,7 +375,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_nox_index
                 name: Grant's Room
           - type: history-graph
-            title: All Rooms - PM0.3
+            title: PM0.3
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_pm0_3
@@ -385,7 +388,7 @@ views:
                 name: Grant PM0.3
             logarithmic_scale: false
           - type: history-graph
-            title: All Rooms - PM1
+            title: PM1
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_pm1
@@ -397,7 +400,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_pm1
                 name: Grant PM1
           - type: history-graph
-            title: All Rooms - PM2.5
+            title: PM2.5
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_pm2_5
@@ -409,7 +412,7 @@ views:
               - entity: sensor.grant_s_room_airgradient_pm2_5
                 name: Grant PM2.5
           - type: history-graph
-            title: All Rooms – PM10
+            title: PM10
             hours_to_show: 48
             entities:
               - entity: sensor.kitchen_airgradient_pm10
