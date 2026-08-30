@@ -1,0 +1,42 @@
+title: Battery Management
+views:
+  # --- TAB 1: CURRENT LEVELS ---
+  - title: Current Levels
+    path: current-levels
+    icon: mdi:battery-50
+    cards:
+      - type: custom:auto-entities
+        card:
+          type: entities
+          title: 🔋 All Battery Levels
+          state_color: true
+        filter:
+          include:
+            - attributes:
+                device_class: battery
+        sort:
+          method: state
+          numeric: true
+
+  # --- TAB 2: BATTERY HISTORY GRAPHS ---
+  - title: History Graphs
+    path: history-graphs
+    icon: mdi:chart-timeline-variant
+    cards:
+      - type: custom:auto-entities
+        card:
+          type: grid
+          columns: 2
+          square: false
+        card_param: cards
+        filter:
+          include:
+            - attributes:
+                device_class: battery
+              options:
+                type: sensor
+                graph: line
+                hours_to_show: 168
+                detail: 1
+        sort:
+          method: name
