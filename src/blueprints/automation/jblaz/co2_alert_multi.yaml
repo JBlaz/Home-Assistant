@@ -1,6 +1,10 @@
 blueprint:
   name: CO₂ Alert (Multi-Sensor)
-  description: Multi-sensor CO₂ alert with mobile notifications and optional script runner.
+  description: >-
+    Multi-sensor CO₂ alert with mobile notifications and an optional script.
+    Alerts once a sensor has stayed above the threshold, refreshes the reading
+    on a fixed interval while it stays high, and clears when it falls back to a
+    separate recovery threshold.
   domain: automation
 
   input:
@@ -24,9 +28,57 @@ blueprint:
           step: 50
           unit_of_measurement: ppm
 
+    clear_threshold:
+      name: Recovery Threshold (ppm)
+      description: >-
+        CO₂ must fall below this before the alert clears. Keep it comfortably
+        below the alert threshold — if the two are equal, a sensor resting on
+        the boundary flaps between alerting and clearing.
+      default: 900
+      selector:
+        number:
+          min: 350
+          max: 2000
+          step: 50
+          unit_of_measurement: ppm
+
+    duration:
+      name: Time Above Threshold
+      description: How long a sensor must stay above the threshold before alerting.
+      default:
+        minutes: 2
+      selector:
+        duration: {}
+
+    clear_duration:
+      name: Time Below Recovery Threshold
+      description: How long a sensor must stay below the recovery threshold before clearing.
+      default:
+        minutes: 5
+      selector:
+        duration: {}
+
+    refresh_interval:
+      name: Reading Refresh
+      description: >-
+        How often to update the ppm shown while an alert is active. The existing
+        notification is replaced in place — you are not sent a new one.
+      default: "/15"
+      selector:
+        select:
+          options:
+            - label: Every 5 minutes
+              value: "/5"
+            - label: Every 10 minutes
+              value: "/10"
+            - label: Every 15 minutes
+              value: "/15"
+            - label: Every 30 minutes
+              value: "/30"
+
     notify_device:
-      name: "Devices to Notify"
-      description: "Select mobile devices to receive notifications."
+      name: Devices to Notify
+      description: Select mobile devices to receive notifications.
       default: []
       selector:
         device:
@@ -35,7 +87,7 @@ blueprint:
 
     optional_script:
       name: Script to Run (Optional)
-      description: Script to run when the alert is triggered.
+      description: Script to run when an alert first fires.
       default: ""
       selector:
         entity:
@@ -43,108 +95,145 @@ blueprint:
 
     action_conditions:
       name: Action Conditions (Optional)
-      description: Additional conditions required before notifications or script run.
+      description: Additional conditions required before notifying or running the script.
       default: []
       selector:
         condition: {}
 
-    duration:
-      name: Time Above Threshold
-      description: How long the sensor must stay above the threshold before alerting.
-      default:
-        minutes: 2
-      selector:
-        duration: {}
+mode: queued
+max: 10
 
-trigger:
-  - platform: numeric_state
+triggers:
+  - trigger: numeric_state
     entity_id: !input co2_sensors
     above: !input threshold
     for: !input duration
     id: alert_start
-  - platform: numeric_state
+
+  - trigger: numeric_state
     entity_id: !input co2_sensors
-    below: !input threshold
+    below: !input clear_threshold
+    for: !input clear_duration
     id: alert_clear
-  - platform: state
-    entity_id: !input co2_sensors
-    id: alert_update
+
+  - trigger: time_pattern
+    minutes: !input refresh_interval
+    id: alert_refresh
 
 variables:
   co2_sensors_list: !input co2_sensors
-  triggered_sensor: "{{ trigger.entity_id if trigger.entity_id is defined else co2_sensors_list[0] }}"
-  current_co2: "{{ states(triggered_sensor) | float(0) }}"
-  sensor_name: "{{ state_attr(triggered_sensor, 'friendly_name') or 'Unknown Sensor' }}"
-  device_name: >
-    {%- set dev_id = state_attr(triggered_sensor, 'device_id') -%}
-    {%- if dev_id -%}
-      {{ device_attr(dev_id, 'name') or 'Unknown Device' }}
-    {%- else -%}
-      Unknown Device
-    {%- endif -%}
-  room_name: "{{ area_name(triggered_sensor) or 'Unknown Room' }}"
+  notify_devices: !input notify_device
   threshold_ppm: !input threshold
   optional_script: !input optional_script
+  # Sensors currently at or above the alert threshold. `namespace` is required:
+  # a plain `{% set %}` inside a `{% for %}` does not survive the loop.
+  # Unavailable sensors float to -1 and drop out on their own.
+  high_sensors: >-
+    {% set ns = namespace(hi=[]) %}
+    {% for s in co2_sensors_list %}
+      {% if states(s) | float(-1) >= (threshold_ppm | float) %}
+        {% set ns.hi = ns.hi + [s] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.hi }}
 
-condition: []
+conditions: []
 
-action:
+actions:
   - choose:
+      # ---------------------------------------------------------------
+      # Recovered — dismiss the notification for that sensor
+      # ---------------------------------------------------------------
       - conditions:
           - condition: trigger
             id: alert_clear
         sequence:
+          - variables:
+              sensor: "{{ trigger.entity_id }}"
           - repeat:
-              for_each: !input notify_device
+              for_each: "{{ notify_devices }}"
               sequence:
-                - if: "{{ device_attr(repeat.item, 'name') is not none }}"
+                - if:
+                    - condition: template
+                      value_template: "{{ device_attr(repeat.item, 'name') is not none }}"
                   then:
-                    - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
+                    - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
                       data:
-                        message: "clear_notification"
+                        message: clear_notification
                         data:
-                          tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
+                          tag: "co2_alert_{{ sensor | replace('.', '_') }}"
 
+      # ---------------------------------------------------------------
+      # First breach — alert, and run the optional script
+      # ---------------------------------------------------------------
       - conditions:
           - condition: trigger
-            id:
-              - alert_start
-              - alert_update
+            id: alert_start
+          - condition: and
+            conditions: !input action_conditions
+        sequence:
+          - variables:
+              sensor: "{{ trigger.entity_id }}"
+              # Read the value that actually tripped the trigger, not the one
+              # that happens to be current after the `for:` delay.
+              ppm: "{{ trigger.to_state.state | float(0) | round(0) }}"
+          - repeat:
+              for_each: "{{ notify_devices }}"
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: "{{ device_attr(repeat.item, 'name') is not none }}"
+                  then:
+                    - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                      data:
+                        title: "🚨 High CO₂ — {{ ppm }} ppm"
+                        message: >-
+                          {{ area_name(sensor) or state_attr(sensor, 'friendly_name') or sensor }}
+                          has reached {{ ppm }} ppm (threshold {{ threshold_ppm }} ppm).
+                        data:
+                          tag: "co2_alert_{{ sensor | replace('.', '_') }}"
+                          sticky: true
+                          persistent: true
+          - if:
+              - condition: template
+                value_template: "{{ optional_script | default('', true) | string | length > 0 }}"
+            then:
+              - action: script.turn_on
+                target:
+                  entity_id: "{{ optional_script }}"
+
+      # ---------------------------------------------------------------
+      # Still high — refresh the ppm in place, on the chosen interval
+      # ---------------------------------------------------------------
+      - conditions:
+          - condition: trigger
+            id: alert_refresh
           - condition: template
-            value_template: >
-              {% if trigger.id == 'alert_update' %}
-                {{ trigger.from_state is defined and trigger.from_state is not none and trigger.from_state.state | float(0) >= threshold_ppm and trigger.to_state.state | float(0) >= threshold_ppm }}
-              {% else %}
-                true
-              {% endif %}
+            value_template: "{{ high_sensors | count > 0 }}"
           - condition: and
             conditions: !input action_conditions
         sequence:
           - repeat:
-              for_each: !input notify_device
+              for_each: "{{ high_sensors }}"
               sequence:
-                - if: "{{ device_attr(repeat.item, 'name') is not none }}"
-                  then:
-                    - service: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}
-                      data:
-                        title: "🚨 High CO₂ Alert > {{ threshold_ppm }} ppm"
-                        message: >
-                          {{ sensor_name }}
-                          {% if device_name != 'Unknown Device' %}({{ device_name }}){% endif %}
-                          has reached {{ current_co2 }} ppm CO₂
-                          {% if room_name != 'Unknown Room' %}in {{ room_name }}{% endif %}
-                          (threshold: {{ threshold_ppm }} ppm).
-                        data:
-                          tag: "co2_alert_{{ triggered_sensor | replace('.', '_') }}"
-                          sticky: "true"
-                          persistent: true
-
-          - if: "{{ trigger.id == 'alert_start' and optional_script is not none and optional_script != '' }}"
-            then:
-              - service: script.turn_on
-                data:
-                  entity_id: "{{ optional_script }}"
-
-
-mode: parallel
-max: 10
+                # Capture the sensor before the inner repeat rebinds `repeat.item`.
+                - variables:
+                    sensor: "{{ repeat.item }}"
+                    ppm: "{{ states(repeat.item) | float(0) | round(0) }}"
+                - repeat:
+                    for_each: "{{ notify_devices }}"
+                    sequence:
+                      - if:
+                          - condition: template
+                            value_template: "{{ device_attr(repeat.item, 'name') is not none }}"
+                        then:
+                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                            data:
+                              title: "🚨 High CO₂ — {{ ppm }} ppm"
+                              message: >-
+                                {{ area_name(sensor) or state_attr(sensor, 'friendly_name') or sensor }}
+                                is at {{ ppm }} ppm (threshold {{ threshold_ppm }} ppm).
+                              data:
+                                tag: "co2_alert_{{ sensor | replace('.', '_') }}"
+                                sticky: true
+                                persistent: true
